@@ -34,7 +34,7 @@ jobs:
       - name: Download base Ludashi APK (Winlator-Ludashi v2.9 bionic)
         run: |
           gh release download v2.9 \
-            --pattern "winlator-ludashi-bionic.apk" \
+            --pattern "ludashi-bionic.apk" \
             -D base/ \
             -R StevenMXZ/Winlator-Ludashi
           ls -lh base/
