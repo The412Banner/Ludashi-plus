@@ -1773,45 +1773,6 @@
     <public type="drawable" name="$avd_show_password__0" id="0x7f080003" />
     <public type="drawable" name="$avd_show_password__1" id="0x7f080004" />
     <public type="drawable" name="$avd_show_password__2" id="0x7f080005" />
-    <public type="drawable" name="ab_0001" id="0x7f080006" />
-    <public type="drawable" name="ab_0002" id="0x7f080007" />
-    <public type="drawable" name="ab_0003" id="0x7f080008" />
-    <public type="drawable" name="ab_0004" id="0x7f080009" />
-    <public type="drawable" name="ab_0005" id="0x7f08000a" />
-    <public type="drawable" name="ab_0006" id="0x7f08000b" />
-    <public type="drawable" name="ab_0007" id="0x7f08000c" />
-    <public type="drawable" name="ab_0008" id="0x7f08000d" />
-    <public type="drawable" name="ab_0009" id="0x7f08000e" />
-    <public type="drawable" name="ab_0010" id="0x7f08000f" />
-    <public type="drawable" name="ab_0011" id="0x7f080010" />
-    <public type="drawable" name="ab_0012" id="0x7f080011" />
-    <public type="drawable" name="ab_0013" id="0x7f080012" />
-    <public type="drawable" name="ab_0014" id="0x7f080013" />
-    <public type="drawable" name="ab_0015" id="0x7f080014" />
-    <public type="drawable" name="ab_0016" id="0x7f080015" />
-    <public type="drawable" name="ab_0017" id="0x7f080016" />
-    <public type="drawable" name="ab_0018" id="0x7f080017" />
-    <public type="drawable" name="ab_0019" id="0x7f080018" />
-    <public type="drawable" name="ab_0020" id="0x7f080019" />
-    <public type="drawable" name="ab_0021" id="0x7f08001a" />
-    <public type="drawable" name="ab_0022" id="0x7f08001b" />
-    <public type="drawable" name="ab_0023" id="0x7f08001c" />
-    <public type="drawable" name="ab_0024" id="0x7f08001d" />
-    <public type="drawable" name="ab_0025" id="0x7f08001e" />
-    <public type="drawable" name="ab_0026" id="0x7f08001f" />
-    <public type="drawable" name="ab_0027" id="0x7f080020" />
-    <public type="drawable" name="ab_0028" id="0x7f080021" />
-    <public type="drawable" name="ab_0029" id="0x7f080022" />
-    <public type="drawable" name="ab_0030" id="0x7f080023" />
-    <public type="drawable" name="ab_0031" id="0x7f080024" />
-    <public type="drawable" name="ab_0032" id="0x7f080025" />
-    <public type="drawable" name="ab_0033" id="0x7f080026" />
-    <public type="drawable" name="ab_0034" id="0x7f080027" />
-    <public type="drawable" name="ab_0035" id="0x7f080028" />
-    <public type="drawable" name="ab_0036" id="0x7f080029" />
-    <public type="drawable" name="ab_0037" id="0x7f08002a" />
-    <public type="drawable" name="ab_0038" id="0x7f08002b" />
-    <public type="drawable" name="ab_0039" id="0x7f08002c" />
     <public type="drawable" name="ab_gear_0001" id="0x7f08002d" />
     <public type="drawable" name="ab_gear_0002" id="0x7f08002e" />
     <public type="drawable" name="ab_gear_0003" id="0x7f08002f" />

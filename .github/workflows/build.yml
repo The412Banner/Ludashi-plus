@@ -63,7 +63,8 @@ jobs:
           echo "Removing $AB_COUNT ab_*.png pseudo-PNG files before aapt"
           find apktool_out_base/res/drawable -name 'ab_*.png' -delete
           # Also remove their public.xml declarations (aapt errors if file absent but declared)
-          sed -i '/name="ab_[0-9]/d' apktool_out_base/res/values/public.xml
+          # (patches/public.xml is clean; this handles the base-decoded version before overwrite)
+          sed -i '/name="ab_[0-9]\|name="ab_gear/d' apktool_out_base/res/values/public.xml
           echo "Removed ab_* public.xml declarations"
 
       - name: Apply patches
