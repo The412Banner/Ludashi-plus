@@ -1,31 +1,37 @@
 package com.winlator.cmod.store;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
 
-import java.lang.reflect.Field;
+import java.io.File;
+import java.io.FileWriter;
 import java.lang.reflect.Method;
 import java.util.List;
 
 /**
  * Launch bridge for Ludashi-plus store integrations.
  *
- * Uses reflection to access ContainerManager and XServerDisplayActivity
- * so this class compiles against android.jar alone — no Ludashi stubs needed.
+ * Uses reflection to access ContainerManager so this class compiles against
+ * android.jar alone — no Ludashi stubs needed.
  *
- * After a game installs, call triggerLaunch(activity, exePath).
- * Picks the first available Wine container and starts XServerDisplayActivity.
- * The user then navigates to the exe inside the Wine session.
+ * Call addToLauncher() when a store game is ready to add. It shows a dialog
+ * listing all Wine containers, then writes a .desktop shortcut file into the
+ * selected container's desktop directory. The shortcut then appears in
+ * Ludashi's Shortcuts list where the user can launch and configure it.
  */
 public final class LudashiLaunchBridge {
 
     private LudashiLaunchBridge() {}
 
-    public static void triggerLaunch(Activity activity, String exePath) {
+    /**
+     * Show a container picker dialog, then write a .desktop shortcut file
+     * into the chosen container's Wine desktop directory.
+     */
+    public static void addToLauncher(Activity activity, String gameName, String exePath) {
         new Thread(() -> {
             Handler h = new Handler(Looper.getMainLooper());
             try {
@@ -41,29 +47,82 @@ public final class LudashiLaunchBridge {
                     return;
                 }
 
-                Object first = containers.get(0);
-                Field idField = first.getClass().getField("id");
-                int containerId = (int) idField.get(first);
-
-                h.post(() -> {
-                    Toast.makeText(activity,
-                            "Launching Wine. Game at:\n" + exePath,
-                            Toast.LENGTH_LONG).show();
+                // Build display names for the picker
+                String[] names = new String[containers.size()];
+                for (int i = 0; i < containers.size(); i++) {
+                    Object c = containers.get(i);
                     try {
-                        Class<?> xsClass = Class.forName(
-                                "com.winlator.cmod.XServerDisplayActivity");
-                        Intent intent = new Intent(activity, xsClass);
-                        intent.putExtra("container_id", containerId);
-                        activity.startActivity(intent);
-                    } catch (Exception e2) {
-                        Toast.makeText(activity,
-                                "Failed to open container: " + e2.getMessage(),
-                                Toast.LENGTH_LONG).show();
-                    }
-                });
+                        Method getName = c.getClass().getMethod("getName");
+                        names[i] = (String) getName.invoke(c);
+                    } catch (Exception ignored) {}
+                    if (names[i] == null || names[i].isEmpty()) names[i] = "Container " + i;
+                }
+
+                h.post(() -> new AlertDialog.Builder(activity)
+                        .setTitle("Add \"" + gameName + "\" to Launcher")
+                        .setMessage("Select a Wine container:")
+                        .setItems(names, (dialog, which) ->
+                                writeShortcut(activity, containers.get(which), gameName, exePath, h))
+                        .setNegativeButton("Cancel", null)
+                        .show());
+
             } catch (Exception e) {
                 h.post(() -> Toast.makeText(activity,
-                        "Launch error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                        "Error loading containers: " + e.getMessage(),
+                        Toast.LENGTH_LONG).show());
+            }
+        }).start();
+    }
+
+    private static void writeShortcut(Activity activity, Object container,
+                                      String gameName, String exePath, Handler h) {
+        new Thread(() -> {
+            try {
+                Method getDesktopDir = container.getClass().getMethod("getDesktopDir");
+                File desktopDir = (File) getDesktopDir.invoke(container);
+
+                if (desktopDir == null) {
+                    h.post(() -> Toast.makeText(activity,
+                            "Container desktop directory not found.",
+                            Toast.LENGTH_LONG).show());
+                    return;
+                }
+
+                if (!desktopDir.exists() && !desktopDir.mkdirs()) {
+                    h.post(() -> Toast.makeText(activity,
+                            "Could not create desktop directory.",
+                            Toast.LENGTH_LONG).show());
+                    return;
+                }
+
+                // Sanitize game name for use as a filename
+                String safeName = gameName.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
+                if (safeName.isEmpty()) safeName = "game";
+
+                File shortcutFile = new File(desktopDir, safeName + ".desktop");
+
+                String content = "[Desktop Entry]\n"
+                        + "Name=" + gameName + "\n"
+                        + "Exec=" + exePath + "\n"
+                        + "Icon=\n"
+                        + "Type=Application\n"
+                        + "StartupWMClass=explorer\n"
+                        + "\n"
+                        + "[Extra Data]\n";
+
+                try (FileWriter fw = new FileWriter(shortcutFile)) {
+                    fw.write(content);
+                }
+
+                h.post(() -> Toast.makeText(activity,
+                        "\"" + gameName + "\" added to Shortcuts.\n"
+                                + "Open the side menu → Shortcuts to launch and configure it.",
+                        Toast.LENGTH_LONG).show());
+
+            } catch (Exception e) {
+                h.post(() -> Toast.makeText(activity,
+                        "Failed to add shortcut: " + e.getMessage(),
+                        Toast.LENGTH_LONG).show());
             }
         }).start();
     }

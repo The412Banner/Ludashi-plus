@@ -10,7 +10,7 @@ public final class GogLaunchHelper {
 
     private GogLaunchHelper() {}
 
-    public static void triggerLaunch(Activity activity, String exePath) {
-        LudashiLaunchBridge.triggerLaunch(activity, exePath);
+    public static void addToLauncher(Activity activity, String gameName, String exePath) {
+        LudashiLaunchBridge.addToLauncher(activity, gameName, exePath);
     }
 }

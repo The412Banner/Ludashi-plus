@@ -620,7 +620,7 @@ public class GogGamesActivity extends Activity {
             }
             if ("Add Game".equals(btnLabel) || "Add to Launcher".equals(btnLabel)) {
                 String exePath = prefs.getString("gog_exe_" + game.gameId, null);
-                if (exePath != null) GogLaunchHelper.triggerLaunch(this, exePath);
+                if (exePath != null) GogLaunchHelper.addToLauncher(this, game.title, exePath);
                 return;
             }
             showInstallConfirm(game, () -> {
@@ -887,7 +887,7 @@ public class GogGamesActivity extends Activity {
             }
             if ("Add Game".equals(lbl) || "Add to Launcher".equals(lbl)) {
                 String exe = prefs.getString("gog_exe_" + game.gameId, null);
-                if (exe != null) GogLaunchHelper.triggerLaunch(this, exe);
+                if (exe != null) GogLaunchHelper.addToLauncher(this, game.title, exe);
                 return;
             }
             showInstallConfirm(game, () -> {
@@ -1027,7 +1027,7 @@ public class GogGamesActivity extends Activity {
         if (isInstalled) {
             b.setPositiveButton("Add to Launcher", (d, w) -> {
                 String exe = prefs.getString("gog_exe_" + game.gameId, null);
-                if (exe != null) GogLaunchHelper.triggerLaunch(this, exe);
+                if (exe != null) GogLaunchHelper.addToLauncher(this, game.title, exe);
             });
             b.setNeutralButton("Uninstall", (d, w) -> {
                 String dirName = prefs.getString("gog_dir_" + game.gameId, null);
@@ -1098,7 +1098,7 @@ public class GogGamesActivity extends Activity {
                             customInstall.setEnabled(true);
                             dialog.setCancelable(true);
                             customInstall.setOnClickListener(vv -> {
-                                GogLaunchHelper.triggerLaunch(GogGamesActivity.this, exePath);
+                                GogLaunchHelper.addToLauncher(GogGamesActivity.this, game.title, exePath);
                                 dialog.dismiss();
                             });
                             // Rebuild grid to show ✓ on tile
