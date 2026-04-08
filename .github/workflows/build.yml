@@ -56,6 +56,12 @@ jobs:
           # Remove firebase_*_keep IDs that break aapt2
           sed -i '/firebase_common_keep\|firebase_crashlytics_keep/d' \
             apktool_out_base/res/values/public.xml || true
+          # The ab_*.png files in Ludashi are not real PNGs (raw animation frames).
+          # Both aapt1 and aapt2 reject them. Delete before build; re-inject from
+          # original APK afterward to preserve them in the output.
+          AB_COUNT=$(find apktool_out_base/res/drawable -name 'ab_*.png' | wc -l)
+          echo "Removing $AB_COUNT ab_*.png pseudo-PNG files before aapt"
+          find apktool_out_base/res/drawable -name 'ab_*.png' -delete
 
       - name: Apply patches
         run: |
@@ -98,6 +104,23 @@ jobs:
             --use-aapt1 \
             -o rebuilt-unsigned.apk
           ls -lh rebuilt-unsigned.apk
+
+      - name: Re-inject original ab_*.png from base APK
+        run: |
+          # These files were removed before aapt because they're not real PNGs.
+          # Copy them back from the original APK zip into the rebuilt APK.
+          BASE_APK=$(ls base/*.apk | head -1)
+          AB_LIST=$(unzip -l "$BASE_APK" | awk '{print $4}' | grep 'res/drawable/ab_.*\.png')
+          COUNT=$(echo "$AB_LIST" | grep -c . || true)
+          echo "Re-injecting $COUNT ab_*.png entries from $BASE_APK"
+          if [ "$COUNT" -gt 0 ]; then
+            # Extract to temp dir preserving path, then add to rebuilt APK
+            mkdir -p ab_reinject
+            unzip -q "$BASE_APK" 'res/drawable/ab_*.png' -d ab_reinject
+            (cd ab_reinject && zip -r ../rebuilt-unsigned.apk res/drawable/ab_*.png)
+            echo "Done. Entries added:"
+            unzip -l rebuilt-unsigned.apk | grep 'res/drawable/ab_' | wc -l
+          fi
 
       - name: Inject store extension as classes17.dex
         run: |
