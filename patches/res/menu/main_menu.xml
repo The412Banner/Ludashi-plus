@@ -11,9 +11,9 @@
         <item android:icon="@drawable/icon_settings" android:id="@id/main_menu_settings" android:title="@string/settings" />
         <item android:icon="@drawable/icon_about" android:id="@id/main_menu_about" android:title="@string/about" />
     </group>
-    <group android:id="@id/group_game_stores" android:checkableBehavior="none">
-        <item android:icon="@drawable/icon_open" android:id="@id/main_menu_gog" android:title="GOG" />
-        <item android:icon="@drawable/icon_open" android:id="@id/main_menu_epic" android:title="Epic Games" />
-        <item android:icon="@drawable/icon_open" android:id="@id/main_menu_amazon" android:title="Amazon Games" />
+    <group android:id="@+id/group_game_stores" android:checkableBehavior="none">
+        <item android:icon="@drawable/icon_open" android:id="@+id/main_menu_gog" android:title="GOG" />
+        <item android:icon="@drawable/icon_open" android:id="@+id/main_menu_epic" android:title="Epic Games" />
+        <item android:icon="@drawable/icon_open" android:id="@+id/main_menu_amazon" android:title="Amazon Games" />
     </group>
 </menu>
