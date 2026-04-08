@@ -64,7 +64,7 @@ jobs:
           find apktool_out_base/res/drawable -name 'ab_*.png' -delete
           # Also remove their public.xml declarations (aapt errors if file absent but declared)
           # (patches/public.xml is clean; this handles the base-decoded version before overwrite)
-          sed -i '/name="ab_[0-9]\|name="ab_gear/d' apktool_out_base/res/values/public.xml
+          sed -i '/name="ab_[0-9]\|name="ab_gear_/d' apktool_out_base/res/values/public.xml
           echo "Removed ab_* public.xml declarations"
 
       - name: Apply patches
