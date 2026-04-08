@@ -137,13 +137,59 @@ After game downloads in store Activity:
 ### Signing
 APK is signed with the AOSP public testkey (`testkey.pk8` / `testkey.x509.pem`, committed to repo). Fine for sideloading; not suitable for signature-verified updates. A private keystore stored as a GitHub Actions secret is the upgrade path if needed.
 
-### Pending: Device Testing (2026-04-08)
-- [ ] Three store entries visible in nav drawer (GOG, Epic Games, Amazon Games)
-- [ ] Store Activities open correctly from nav drawer
-- [ ] Login flows work (GOG OAuth, Epic redirect, Amazon PKCE)
-- [ ] Library sync and game listing works
-- [ ] Download pipeline works end-to-end
-- [ ] Launch bridge opens Wine container after download completes (v1: user navigates to exe manually)
+### Device Test Results (2026-04-08, v1.0.0-pre1)
+- [x] Three store entries visible in nav drawer (GOG, Epic Games, Amazon Games) ✓
+- [x] Store Activities open correctly from nav drawer ✓
+- [x] GOG login/library/install pipeline works ✓
+- [x] Download completes, game installed ✓
+- [~] "Add to Launcher" booted Wine container directly (v1 behavior — no container picker, no shortcut written) → **fixed in v1.0.0-pre2**
+
+---
+
+## Session: 2026-04-08 — Container Picker + Shortcuts Integration (v1.0.0-pre2)
+
+### Problem
+"Add to Launcher" in v1 called `LudashiLaunchBridge.triggerLaunch()` which picked the first container and immediately booted `XServerDisplayActivity`. No shortcut was written, no container choice, user was dropped into a bare Wine desktop.
+
+### Fix
+Replaced launch behavior with shortcut creation:
+
+1. **Container picker dialog** — `addToLauncher()` reflectively loads `ContainerManager.getContainers()`, builds a list of container names, shows `AlertDialog` for user to pick
+2. **Shortcut file written** — after selection, `writeShortcut()` calls `Container.getDesktopDir()` via reflection, writes `{gameName}.desktop` to the container's Wine desktop directory
+3. **Shortcut format** — standard Ludashi `.desktop` file:
+   ```
+   [Desktop Entry]
+   Name={gameName}
+   Exec={absLinuxExePath}
+   Icon=
+   Type=Application
+   StartupWMClass=explorer
+
+   [Extra Data]
+   ```
+4. **Success toast** — "Added to Shortcuts. Open side menu → Shortcuts to launch and configure it."
+
+Shortcut appears in Ludashi's **Shortcuts** nav item. User can launch it and customize Wine setup (graphics driver, DX wrapper, emulator, etc.) via the native `ShortcutSettingsDialog`.
+
+### Files Changed
+- `extension/LudashiLaunchBridge.java` — replaced `triggerLaunch()` with `addToLauncher()` + `writeShortcut()`
+- `extension/GogLaunchHelper.java` — `triggerLaunch()` → `addToLauncher(activity, name, path)`
+- `extension/GogGamesActivity.java` — 4 call sites updated to pass `game.title`
+- `extension/EpicGamesActivity.java` — `pendingLaunchExe(path)` → `pendingLaunchExe(name, path)`
+- `extension/AmazonGamesActivity.java` — same as Epic
+
+### Commits & Builds
+| Commit | Tag | Description | CI Run | Result |
+|---|---|---|---|---|
+| `f2b737d` | v1.0.0-pre2 | feat: container picker + .desktop shortcut creation | [24157723585](https://github.com/The412Banner/Ludashi-plus/actions/runs/24157723585) | ✅ success |
+
+### Pending: Device Testing (2026-04-08, v1.0.0-pre2)
+- [ ] Container picker dialog appears on "Add to Launcher"
+- [ ] Correct containers listed by name
+- [ ] After picking, .desktop file written to container's desktop dir
+- [ ] Shortcut appears in Ludashi side menu → Shortcuts
+- [ ] Shortcut launches game correctly from Shortcuts list
+- [ ] ShortcutSettingsDialog lets user customize Wine setup
 
 ---
 
