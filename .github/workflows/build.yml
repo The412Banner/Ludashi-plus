@@ -1,0 +1,146 @@
+name: Build Ludashi-plus APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install apktool 2.9.3
+        run: |
+          mkdir -p $HOME/bin
+          wget -q "https://github.com/iBotPeaches/Apktool/releases/download/v2.9.3/apktool_2.9.3.jar" \
+            -O $HOME/bin/apktool.jar
+          wget -q "https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool" \
+            -O $HOME/bin/apktool
+          chmod +x $HOME/bin/apktool
+          echo "$HOME/bin" >> $GITHUB_PATH
+          java -jar $HOME/bin/apktool.jar --version
+
+      - name: Download base Ludashi APK (Winlator-Ludashi v2.9 bionic)
+        run: |
+          gh release download v2.9 \
+            --pattern "winlator-ludashi-bionic.apk" \
+            -D base/ \
+            -R StevenMXZ/Winlator-Ludashi
+          ls -lh base/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Decode base APK with apktool
+        run: |
+          APK=$(ls base/*.apk | head -1)
+          echo "Decoding: $APK"
+          java -jar $HOME/bin/apktool.jar d "$APK" -o apktool_out_base -f
+          echo "DEX files found:"
+          ls apktool_out_base/smali_classes* 2>/dev/null | head -5 || echo "(none)"
+
+      - name: Fix aapt2 incompatible resources
+        run: |
+          # Remove raws.xml if it exists (causes aapt2 errors)
+          rm -f apktool_out_base/res/values/raws.xml
+          # Remove firebase_*_keep IDs that break aapt2
+          sed -i '/firebase_common_keep\|firebase_crashlytics_keep/d' \
+            apktool_out_base/res/values/public.xml || true
+
+      - name: Apply patches
+        run: |
+          echo "Applying patches from patches/ ..."
+          cp -r patches/. apktool_out_base/
+          echo "Patch manifest activities:"
+          grep "store\." apktool_out_base/AndroidManifest.xml
+          echo "Patch menu items:"
+          grep "main_menu_gog\|main_menu_epic\|main_menu_amazon" \
+            apktool_out_base/res/menu/main_menu.xml
+
+      - name: Download org.json for compilation
+        run: |
+          wget -q "https://repo1.maven.org/maven2/org/json/json/20240303/json-20240303.jar" \
+            -O org-json.jar
+
+      - name: Compile store extension → DEX
+        run: |
+          ANDROID_JAR=$(ls $ANDROID_SDK_ROOT/platforms/android-*/android.jar 2>/dev/null \
+            | sort -V | tail -1)
+          echo "Using android.jar: $ANDROID_JAR"
+
+          mkdir -p ext_classes
+          javac -source 8 -target 8 \
+            -cp "$ANDROID_JAR:org-json.jar" \
+            -d ext_classes \
+            extension/*.java
+          echo "Compiled $(find ext_classes -name '*.class' | wc -l) class files"
+
+          BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | sort -V | tail -1)
+          mkdir -p ext_dex
+          $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/d8 \
+            --release --min-api 26 --output ext_dex \
+            $(find ext_classes -name "*.class")
+          ls -lh ext_dex/classes.dex
+
+      - name: Build modified APK with apktool
+        run: |
+          java -jar $HOME/bin/apktool.jar b apktool_out_base \
+            -o rebuilt-unsigned.apk
+          ls -lh rebuilt-unsigned.apk
+
+      - name: Inject store extension as classes17.dex
+        run: |
+          # Inject compiled store extension as classes17.dex into the rebuilt APK
+          cp ext_dex/classes.dex classes17.dex
+          zip -j rebuilt-unsigned.apk classes17.dex
+          echo "classes17.dex injected ($(du -sh classes17.dex | cut -f1))"
+
+      - name: Zipalign
+        run: |
+          BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | sort -V | tail -1)
+          $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/zipalign \
+            -f -v 4 rebuilt-unsigned.apk rebuilt-aligned.apk
+
+      - name: Sign APK
+        id: sign
+        run: |
+          APK_NAME="LudashiPlus-${GITHUB_REF_NAME}.apk"
+          BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | sort -V | tail -1)
+          $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/apksigner sign \
+            --key testkey.pk8 \
+            --cert testkey.x509.pem \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "$APK_NAME" \
+            rebuilt-aligned.apk
+          echo "Signed: $APK_NAME ($(du -sh "$APK_NAME" | cut -f1))"
+          echo "apk_name=$APK_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update GitHub release
+        run: |
+          APK_NAME="${{ steps.sign.outputs.apk_name }}"
+          TAG="${GITHUB_REF_NAME}"
+
+          if gh release view "$TAG" &>/dev/null; then
+            gh release upload "$TAG" "$APK_NAME" --clobber
+            echo "Uploaded to existing release $TAG"
+          else
+            gh release create "$TAG" "$APK_NAME" \
+              --title "Ludashi-plus $TAG" \
+              --notes "Automated build — see PROGRESS_LOG.md for details." \
+              --prerelease
+            echo "Created new release $TAG with $APK_NAME"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

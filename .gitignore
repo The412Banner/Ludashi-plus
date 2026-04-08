@@ -5,3 +5,7 @@ base/
 *.dex
 ext_classes/
 ext_dex/
+jadx_out/
+rebuilt-*.apk
+classes17.dex
+org-json.jar
