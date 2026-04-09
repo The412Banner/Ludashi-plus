@@ -307,4 +307,47 @@ Implement Phase 1: SteamRepository, SteamForegroundService, and stub Activities.
 
 ---
 
+## Session: 2026-04-09 — Steam Integration Phase 2 (Credential Login UI)
+
+### What Changed
+
+**New: `extension/steam/SteamAuthManager.java`**
+- Java singleton wrapping JavaSteam's `SteamAuthentication` API
+- Implements `IAuthenticator` via anonymous inner class
+- `getEmailCode` and `getDeviceCode` return `CompletableFuture<String>` that resolve when `submitGuardCode()` is called
+- `acceptDeviceConfirmation()` returns `CompletableFuture<Boolean>` (informs UI, immediately resolves true)
+- Main auth loop runs on dedicated thread; uses `CompletableFuture.get()` on `beginAuthSessionViaCredentials()` and `pollingWaitForResult()`
+
+**Updated: `extension/steam/SteamLoginActivity.kt`**
+- Full programmatic login UI: username/password EditTexts, Sign In button, QR button, progress spinner, status text
+- `SteamAuthManager.AuthListener` callbacks: `onSteamGuardEmailRequired`, `onSteamGuardTotpRequired`, `onDeviceConfirmationRequired`, `onSuccess`, `onFailure`
+- Steam Guard dialog with AlertDialog (email = text input, TOTP = numeric input)
+- On success: `SteamRepository.loginWithToken()` + navigate to `SteamGamesActivity`
+- Cancels auth in `onDestroy()`
+
+### IAuthenticator API (discovered via javap)
+```
+CompletableFuture<String>  getDeviceCode(boolean)           // TOTP/mobile auth
+CompletableFuture<String>  getEmailCode(String, boolean)    // email Steam Guard
+CompletableFuture<Boolean> acceptDeviceConfirmation()       // mobile approval prompt
+```
+Note: method is `getDeviceCode`, NOT `getTotpCode` — only discovered via `javap -p`.
+
+### Commits & Builds
+| Commit | Tag | Description | CI Run | Result |
+|---|---|---|---|---|
+| `2fb3595` | v1.0.0-pre6 | feat: Phase 2 — Steam credential login UI + auth flow | [24168973466](https://github.com/The412Banner/Ludashi-plus/actions/runs/24168973466) | ❌ IAuthenticator returns CompletableFuture<T> |
+| `b1ae266` | v1.0.0-pre6 | ci: add JavaSteam API inspection step | [24169130046](https://github.com/The412Banner/Ludashi-plus/actions/runs/24169130046) | ❌ (inspection only) |
+| `4fc9569` | v1.0.0-pre6 | fix: CompletableFuture<T> return types; clientOSType field name | [24169252892](https://github.com/The412Banner/Ludashi-plus/actions/runs/24169252892) | ❌ getTotpCode → getDeviceCode; Boolean not Void |
+| `8349367` | v1.0.0-pre6 | ci: inspect IAuthenticator + UserConsoleAuthenticator | [24169413540](https://github.com/The412Banner/Ludashi-plus/actions/runs/24169413540) | ❌ (inspection only) |
+| `2939c58` | v1.0.0-pre6 | fix: getDeviceCode + CompletableFuture<Boolean> for acceptDeviceConfirmation | [~24169552000](https://github.com/The412Banner/Ludashi-plus/actions/runs/) | ✅ **success** |
+
+### Root Causes Fixed (Phase 2 debugging chain)
+1. `IAuthenticator` is a CompletableFuture-based API (not blocking, not Kotlin coroutines from Java's perspective)
+2. `AuthSessionDetails.clientOSType` not `clientOsType` (field name)
+3. `acceptDeviceConfirmation()` returns `CompletableFuture<Boolean>` not `Void`
+4. TOTP method is `getDeviceCode(boolean)` not `getTotpCode(boolean)` — only visible via `javap -p`
+
+---
+
 *Updated automatically after every commit and build.*
