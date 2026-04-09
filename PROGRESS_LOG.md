@@ -183,13 +183,71 @@ Shortcut appears in Ludashi's **Shortcuts** nav item. User can launch it and cus
 |---|---|---|---|---|
 | `f2b737d` | v1.0.0-pre2 | feat: container picker + .desktop shortcut creation | [24157723585](https://github.com/The412Banner/Ludashi-plus/actions/runs/24157723585) | ✅ success |
 
-### Pending: Device Testing (2026-04-08, v1.0.0-pre2)
-- [ ] Container picker dialog appears on "Add to Launcher"
+### Device Test Results (2026-04-08, v1.0.0-pre2)
+- [x] Container picker shows on "Add to Launcher" ✓ (dialog appeared)
+- [~] Container list empty — bug: `setMessage()` + `setItems()` are mutually exclusive on Android; message view took over, items ListView never rendered → fixed in pre3
 - [ ] Correct containers listed by name
 - [ ] After picking, .desktop file written to container's desktop dir
 - [ ] Shortcut appears in Ludashi side menu → Shortcuts
 - [ ] Shortcut launches game correctly from Shortcuts list
 - [ ] ShortcutSettingsDialog lets user customize Wine setup
+
+---
+
+## Session: 2026-04-08 — Container picker fix (v1.0.0-pre3)
+
+### Bug
+`AlertDialog.Builder.setMessage()` and `.setItems()` are mutually exclusive on Android.
+The message TextView takes over and the items ListView is never rendered, so the
+container picker dialog appeared empty even though containers loaded correctly.
+
+### Fix
+- `extension/LudashiLaunchBridge.java`: removed `.setMessage("Select a Wine container:")`
+- Instruction folded into title: `"Select container for \"{gameName}\""`
+
+### Commits & Builds
+| Commit | Tag | Description | CI Run | Result |
+|---|---|---|---|---|
+| `8378d02` | v1.0.0-pre3 | fix: remove conflicting setMessage() so container list renders in picker dialog | [24158700638](https://github.com/The412Banner/Ludashi-plus/actions/runs/24158700638) | ✅ success |
+
+---
+
+## Session: 2026-04-08 — Steam Integration Phase 0 (CI Upgrade)
+
+### Goal
+Add Steam as a 4th game store tab. Phase 0 upgrades the CI to support Kotlin compilation and
+JavaSteam JAR injection — the prerequisite for all subsequent Steam phases.
+
+### What Changed (Phase 0)
+
+**CI (`build.yml`) — complete rewrite:**
+- Kotlin compiler auto-detection: detects Kotlin version bundled in base APK, downloads matching `kotlinc`
+- JavaSteam download: fetches `javasteam-1.8.1-SNAPSHOT.jar` from JitPack
+- `d8(javasteam.jar)` → classes18.dex (JavaSteam bundled separately)
+- `kotlinc -no-stdlib extension/steam/*.kt` → d8 → classes19.dex+ (Steam Kotlin code)
+- Java stores (GOG/Epic/Amazon) remain in classes17.dex (unchanged)
+- Dynamic DEX index assignment: JavaSteam fills 18+, Kotlin Steam follows contiguously
+
+**Resource patches:**
+- `patches/res/menu/main_menu.xml` — added `main_menu_steam` item to `group_game_stores`
+- `patches/res/values/public.xml` — added `main_menu_steam` = `0x7f09038b`
+- `patches/res/values/ludashi_plus_ids.xml` — added `main_menu_steam` declaration
+
+**Manifest patches:**
+- Added `FOREGROUND_SERVICE_DATA_SYNC` permission
+- Registered `SteamMainActivity`, `SteamLoginActivity`, `QrLoginActivity`, `SteamGamesActivity`
+- Registered `SteamForegroundService` with `foregroundServiceType="dataSync"`
+
+**Smali patch:**
+- `patches/smali_classes8/.../MainActivity.smali` — added `const v4, 0x7f09038b` + `if-eq v1, v4, :start_steam` branch + `:start_steam` label block (starts `SteamMainActivity`)
+
+**New files:**
+- `extension/steam/SteamPlaceholder.kt` — smoke-test Kotlin file confirming CI compiles Kotlin
+
+### Commits & Builds
+| Commit | Tag | Description | CI Run | Result |
+|---|---|---|---|---|
+| (pending) | v1.0.0-pre4 | feat: Phase 0 — Steam CI upgrade, menu wiring, manifest entries | (pending) | 🔄 |
 
 ---
 

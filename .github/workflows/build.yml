@@ -44,6 +44,60 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Detect Kotlin version in base APK and install matching kotlinc
+        run: |
+          BASE_APK=$(ls base/*.apk | head -1)
+          # Extract classes.dex and look for kotlin-stdlib version string
+          mkdir -p kotlin_detect
+          unzip -q "$BASE_APK" "classes.dex" -d kotlin_detect/ 2>/dev/null || true
+          # Try to find kotlin version from META-INF in the APK zip entries
+          KT_VERSION=$(unzip -p "$BASE_APK" "META-INF/kotlin-stdlib.kotlin_module" 2>/dev/null \
+            | strings | grep -oP '\d+\.\d+\.\d+' | head -1 || echo "")
+          if [ -z "$KT_VERSION" ]; then
+            # Fallback: look for version string in all META-INF entries
+            KT_VERSION=$(unzip -l "$BASE_APK" | grep -oP 'kotlin-stdlib-\K[\d.]+' | head -1 || echo "")
+          fi
+          if [ -z "$KT_VERSION" ]; then
+            # Safe fallback — use 1.9.24 (widely compatible, works with most coroutines in APKs from 2024)
+            KT_VERSION="1.9.24"
+            echo "Could not detect Kotlin version — defaulting to $KT_VERSION"
+          else
+            echo "Detected Kotlin version: $KT_VERSION"
+          fi
+          echo "KT_VERSION=$KT_VERSION" >> $GITHUB_ENV
+
+          # Download kotlinc matching detected version
+          KT_MAJOR_MINOR=$(echo "$KT_VERSION" | cut -d. -f1-2)
+          KOTLINC_URL="https://github.com/JetBrains/kotlin/releases/download/v${KT_VERSION}/kotlin-compiler-${KT_VERSION}.zip"
+          echo "Downloading: $KOTLINC_URL"
+          wget -q "$KOTLINC_URL" -O kotlinc.zip || {
+            # If exact version not found, try latest 1.9.x
+            FALLBACK="1.9.24"
+            echo "Exact version not found, falling back to $FALLBACK"
+            wget -q "https://github.com/JetBrains/kotlin/releases/download/v${FALLBACK}/kotlin-compiler-${FALLBACK}.zip" \
+              -O kotlinc.zip
+          }
+          unzip -q kotlinc.zip -d $HOME/
+          echo "$HOME/kotlinc/bin" >> $GITHUB_PATH
+          kotlinc -version
+
+      - name: Download JavaSteam JAR
+        run: |
+          # JavaSteam 1.8.1-SNAPSHOT from JitPack
+          # JitPack snapshot URL format: https://jitpack.io/in/dragonbra/javasteam/-SNAPSHOT/javasteam--SNAPSHOT.jar
+          # Using the specific commit hash build for reliability
+          JAVASTEAM_URL="https://jitpack.io/in/dragonbra/javasteam/1.8.1-SNAPSHOT/javasteam-1.8.1-SNAPSHOT.jar"
+          echo "Downloading JavaSteam..."
+          wget -q --timeout=120 "$JAVASTEAM_URL" -O javasteam.jar || {
+            echo "JitPack direct failed, trying alternate JitPack URL..."
+            # Try build from main branch
+            wget -q --timeout=120 \
+              "https://jitpack.io/in/dragonbra/javasteam/main-SNAPSHOT/javasteam-main-SNAPSHOT.jar" \
+              -O javasteam.jar
+          }
+          ls -lh javasteam.jar
+          echo "JavaSteam JAR downloaded: $(du -sh javasteam.jar | cut -f1)"
+
       - name: Decode base APK with apktool
         run: |
           APK=$(ls base/*.apk | head -1)
@@ -54,23 +108,15 @@ jobs:
 
       - name: Fix aapt2 incompatible resources
         run: |
-          # Remove raws.xml if it exists (causes aapt2 errors)
           rm -f apktool_out_base/res/values/raws.xml
-          # Remove firebase_*_keep IDs that break aapt2
           sed -i '/firebase_common_keep\|firebase_crashlytics_keep/d' \
             apktool_out_base/res/values/public.xml || true
-          # The ab_*.png / ab_gear_*.png files are not valid PNGs (raw animation frames).
-          # animated_background.xml and animated_gear_background.xml reference them.
-          # Delete all these files + their public.xml entries before aapt build;
-          # re-inject the original bytes from the base APK afterward.
           DRAWABLE_DIR=apktool_out_base/res/drawable
           AB_COUNT=$(find "$DRAWABLE_DIR" -name 'ab_*.png' | wc -l)
           echo "Removing $AB_COUNT ab_*.png pseudo-PNG files"
           find "$DRAWABLE_DIR" -name 'ab_*.png' -delete
-          # Also delete drawable XMLs that reference the deleted PNGs
           rm -f "$DRAWABLE_DIR/animated_background.xml" \
                 "$DRAWABLE_DIR/animated_gear_background.xml"
-          # Remove all their public.xml entries
           sed -i '/name="ab_[0-9]\|name="ab_gear_\|name="animated_background\|name="animated_gear_background/d' \
             apktool_out_base/res/values/public.xml
           echo "Removed ab_*/animated_background entries from public.xml"
@@ -80,35 +126,73 @@ jobs:
           echo "Applying patches from patches/ ..."
           cp -r patches/. apktool_out_base/
           echo "Patch manifest activities:"
-          grep "store\." apktool_out_base/AndroidManifest.xml
+          grep "store\." apktool_out_base/AndroidManifest.xml | grep -v "^$" | head -20
           echo "Patch menu items:"
-          grep "main_menu_gog\|main_menu_epic\|main_menu_amazon" \
+          grep "main_menu_gog\|main_menu_epic\|main_menu_amazon\|main_menu_steam" \
             apktool_out_base/res/menu/main_menu.xml
 
-      - name: Download org.json for compilation
+      - name: Download org.json for Java compilation
         run: |
           wget -q "https://repo1.maven.org/maven2/org/json/json/20240303/json-20240303.jar" \
             -O org-json.jar
 
-      - name: Compile store extension → DEX
+      - name: Compile Java store extension (GOG/Epic/Amazon) → classes17.dex
         run: |
           ANDROID_JAR=$(ls $ANDROID_SDK_ROOT/platforms/android-*/android.jar 2>/dev/null \
             | sort -V | tail -1)
           echo "Using android.jar: $ANDROID_JAR"
 
-          mkdir -p ext_classes
+          mkdir -p ext_java_classes
           javac -source 8 -target 8 \
             -cp "$ANDROID_JAR:org-json.jar" \
-            -d ext_classes \
+            -d ext_java_classes \
             extension/*.java
-          echo "Compiled $(find ext_classes -name '*.class' | wc -l) class files"
+          echo "Compiled $(find ext_java_classes -name '*.class' | wc -l) Java class files"
 
           BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | sort -V | tail -1)
-          mkdir -p ext_dex
+          mkdir -p ext_java_dex
           $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/d8 \
-            --release --min-api 26 --output ext_dex \
-            $(find ext_classes -name "*.class")
-          ls -lh ext_dex/classes.dex
+            --release --min-api 26 --output ext_java_dex \
+            $(find ext_java_classes -name "*.class")
+          ls -lh ext_java_dex/classes.dex
+          echo "classes17.dex ready: $(du -sh ext_java_dex/classes.dex | cut -f1)"
+
+      - name: Bundle JavaSteam → classes18.dex
+        run: |
+          BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | sort -V | tail -1)
+          mkdir -p ext_steam_lib_dex
+          echo "Running d8 on JavaSteam JAR..."
+          $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/d8 \
+            --release --min-api 26 --output ext_steam_lib_dex \
+            javasteam.jar
+          # d8 may produce multiple DEX files if the JAR is large
+          echo "JavaSteam DEX output:"
+          ls -lh ext_steam_lib_dex/
+
+      - name: Compile Kotlin Steam extension → classes.dex (for classes19+)
+        run: |
+          ANDROID_JAR=$(ls $ANDROID_SDK_ROOT/platforms/android-*/android.jar 2>/dev/null \
+            | sort -V | tail -1)
+          BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | sort -V | tail -1)
+
+          mkdir -p ext_kotlin_classes
+          KT_FILES=$(find extension/steam -name "*.kt" | sort)
+          echo "Compiling Kotlin files:"
+          echo "$KT_FILES"
+
+          kotlinc \
+            -no-stdlib \
+            -classpath "$ANDROID_JAR:javasteam.jar" \
+            -d ext_kotlin_classes \
+            $KT_FILES
+          echo "Kotlin compilation done: $(find ext_kotlin_classes -name '*.class' | wc -l) class files"
+
+          mkdir -p ext_kotlin_dex
+          $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/d8 \
+            --release --min-api 26 --output ext_kotlin_dex \
+            $(find ext_kotlin_classes -name "*.class")
+          echo "Kotlin DEX output:"
+          ls -lh ext_kotlin_dex/
 
       - name: Build modified APK with apktool
         run: |
@@ -119,11 +203,8 @@ jobs:
 
       - name: Re-inject original ab_*.png and animated XMLs from base APK
         run: |
-          # These files were removed before aapt (pseudo-PNG / XML referencing them).
-          # Re-inject original bytes from the base APK zip — bypasses aapt recompilation.
           BASE_APK=$(ls base/*.apk | head -1)
           mkdir -p ab_reinject
-          # Extract all ab_*.png, ab_gear_*.png, and the animated drawable XMLs
           unzip -q "$BASE_APK" \
             'res/drawable/ab_*.png' \
             'res/drawable/animated_background.xml' \
@@ -132,18 +213,41 @@ jobs:
           INJECTED=$(find ab_reinject -type f | wc -l)
           echo "Re-injecting $INJECTED files from $BASE_APK"
           if [ "$INJECTED" -gt 0 ]; then
-            # Add with preserved paths (res/drawable/...)
             (cd ab_reinject && zip -r ../rebuilt-unsigned.apk res/)
             echo "Done. ab_/animated entries in APK:"
             unzip -l rebuilt-unsigned.apk | grep 'res/drawable/ab_\|animated_background\|animated_gear' | wc -l
           fi
 
-      - name: Inject store extension as classes17.dex
+      - name: Inject classes17.dex (Java stores — GOG/Epic/Amazon)
         run: |
-          # Inject compiled store extension as classes17.dex into the rebuilt APK
-          cp ext_dex/classes.dex classes17.dex
+          cp ext_java_dex/classes.dex classes17.dex
           zip -j rebuilt-unsigned.apk classes17.dex
           echo "classes17.dex injected ($(du -sh classes17.dex | cut -f1))"
+
+      - name: Inject classes18.dex+ (JavaSteam library)
+        run: |
+          # d8 may have split JavaSteam into multiple DEX files
+          DEX_IDX=18
+          for dex_file in $(ls ext_steam_lib_dex/classes*.dex | sort); do
+            TARGET_NAME="classes${DEX_IDX}.dex"
+            cp "$dex_file" "$TARGET_NAME"
+            zip -j rebuilt-unsigned.apk "$TARGET_NAME"
+            echo "${TARGET_NAME} injected ($(du -sh "$TARGET_NAME" | cut -f1))"
+            DEX_IDX=$((DEX_IDX + 1))
+          done
+          echo "Next available DEX index: $DEX_IDX"
+          echo "NEXT_DEX_IDX=$DEX_IDX" >> $GITHUB_ENV
+
+      - name: Inject Kotlin Steam extension DEX
+        run: |
+          DEX_IDX=${{ env.NEXT_DEX_IDX }}
+          for dex_file in $(ls ext_kotlin_dex/classes*.dex | sort); do
+            TARGET_NAME="classes${DEX_IDX}.dex"
+            cp "$dex_file" "$TARGET_NAME"
+            zip -j rebuilt-unsigned.apk "$TARGET_NAME"
+            echo "${TARGET_NAME} injected ($(du -sh "$TARGET_NAME" | cut -f1))"
+            DEX_IDX=$((DEX_IDX + 1))
+          done
 
       - name: Zipalign
         run: |

@@ -4,4 +4,5 @@
     <item type="id" name="main_menu_gog"/>
     <item type="id" name="main_menu_epic"/>
     <item type="id" name="main_menu_amazon"/>
+    <item type="id" name="main_menu_steam"/>
 </resources>

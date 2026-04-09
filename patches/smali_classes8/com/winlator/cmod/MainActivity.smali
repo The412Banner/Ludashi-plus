@@ -1296,6 +1296,10 @@
     const v4, 0x7f090388
     if-eq v1, v4, :start_amazon
 
+    # Game Stores: Steam (0x7f09038b)
+    const v4, 0x7f09038b
+    if-eq v1, v4, :start_steam
+
     packed-switch v1, :pswitch_data_0
 
     goto :goto_0
@@ -1317,6 +1321,13 @@
     :start_amazon
     new-instance v1, Landroid/content/Intent;
     const-class v4, Lcom/winlator/cmod/store/AmazonMainActivity;
+    invoke-direct {v1, p0, v4}, Landroid/content/Intent;-><init>(Landroid/content/Context;Ljava/lang/Class;)V
+    invoke-virtual {p0, v1}, Lcom/winlator/cmod/MainActivity;->startActivity(Landroid/content/Intent;)V
+    goto :goto_0
+
+    :start_steam
+    new-instance v1, Landroid/content/Intent;
+    const-class v4, Lcom/winlator/cmod/store/SteamMainActivity;
     invoke-direct {v1, p0, v4}, Landroid/content/Intent;-><init>(Landroid/content/Context;Ljava/lang/Class;)V
     invoke-virtual {p0, v1}, Lcom/winlator/cmod/MainActivity;->startActivity(Landroid/content/Intent;)V
     goto :goto_0

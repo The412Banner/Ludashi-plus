@@ -16,6 +16,7 @@
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application android:allowAudioPlaybackCapture="true" android:allowBackup="false" android:appCategory="game" android:appComponentFactory="androidx.core.app.CoreComponentFactory" android:debuggable="true" android:extractNativeLibs="true" android:hardwareAccelerated="true" android:icon="@mipmap/ic_launcher" android:isGame="true" android:label="Winlator CMOD" android:roundIcon="@mipmap/ic_launcher_round" android:supportsRtl="true" android:theme="@style/AppTheme">
@@ -45,6 +46,11 @@
         <activity android:exported="false" android:name="com.winlator.cmod.store.AmazonMainActivity" android:theme="@style/AppTheme.Dark"/>
         <activity android:exported="false" android:name="com.winlator.cmod.store.AmazonLoginActivity" android:theme="@style/AppTheme.Dark"/>
         <activity android:exported="false" android:name="com.winlator.cmod.store.AmazonGamesActivity" android:theme="@style/AppTheme.Dark"/>
+        <activity android:exported="false" android:name="com.winlator.cmod.store.SteamMainActivity" android:theme="@style/AppTheme.Dark"/>
+        <activity android:exported="false" android:name="com.winlator.cmod.store.SteamLoginActivity" android:theme="@style/AppTheme.Dark"/>
+        <activity android:exported="false" android:name="com.winlator.cmod.store.QrLoginActivity" android:theme="@style/AppTheme.Dark"/>
+        <activity android:exported="false" android:name="com.winlator.cmod.store.SteamGamesActivity" android:theme="@style/AppTheme.Dark"/>
+        <service android:exported="false" android:name="com.winlator.cmod.store.SteamForegroundService" android:foregroundServiceType="dataSync"/>
         <receiver android:exported="true" android:name="com.winlator.cmod.ShortcutBroadcastReceiver">
             <intent-filter>
                 <action android:name="com.winlator.cmod.SHORTCUT_ADDED"/>
