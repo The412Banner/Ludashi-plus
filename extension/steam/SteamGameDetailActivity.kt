@@ -184,8 +184,30 @@ class SteamGameDetailActivity : Activity(), SteamRepository.SteamEventListener {
             Toast.makeText(this, "Game not installed", Toast.LENGTH_SHORT).show()
             return
         }
-        // Phase 7 — launch via LudashiLaunchBridge
-        Toast.makeText(this, "Launch coming in Phase 7", Toast.LENGTH_SHORT).show()
+        val exePath = findExe(File(g.installDir))
+        if (exePath == null) {
+            Toast.makeText(this, "No executable found in install directory", Toast.LENGTH_LONG).show()
+            return
+        }
+        com.winlator.cmod.store.LudashiLaunchBridge.addToLauncher(this, g.name, exePath)
+    }
+
+    /**
+     * Scan for the best .exe in the install directory tree.
+     * Skips redistributable paths. Returns the largest .exe found,
+     * or null if none exist.
+     */
+    private fun findExe(root: File): String? {
+        if (!root.exists() || !root.isDirectory) return null
+        val skip = setOf("redist", "redistribut", "_commonredist", "directx", "vcredist", "__installer")
+        return root.walkTopDown()
+            .filter { f ->
+                f.isFile &&
+                f.name.endsWith(".exe", ignoreCase = true) &&
+                skip.none { f.absolutePath.lowercase().contains(it) }
+            }
+            .maxByOrNull { it.length() }
+            ?.absolutePath
     }
 
     // -------------------------------------------------------------------------
