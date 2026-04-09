@@ -51,15 +51,15 @@ class SteamForegroundService : Service() {
         startForeground(NOTIFICATION_ID, buildNotification("Connecting to Steam…"))
         Log.i(TAG, "Service started")
 
-        SteamRepository.initialize()
-        SteamRepository.connect()
+        SteamRepository.getInstance().initialize()
+        SteamRepository.getInstance().connect()
 
         return START_STICKY   // restart if killed by OS
     }
 
     override fun onDestroy() {
         Log.i(TAG, "Service destroyed — disconnecting")
-        SteamRepository.disconnect()
+        SteamRepository.getInstance().disconnect()
         super.onDestroy()
     }
 
