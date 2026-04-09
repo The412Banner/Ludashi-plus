@@ -513,7 +513,7 @@ public final class SteamRepository {
     // Internal helpers
     // -------------------------------------------------------------------------
 
-    private void emit(String event) {
+    public void emit(String event) {
         for (SteamEventListener l : listeners) {
             try { l.onEvent(event); }
             catch (Exception e) { Log.e(TAG, "Listener error for event " + event, e); }
