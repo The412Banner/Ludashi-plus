@@ -179,6 +179,14 @@ jobs:
           echo "JavaSteam DEX output:"
           ls -lh ext_steam_lib_dex/
 
+      - name: Inspect JavaSteam JAR package structure
+        run: |
+          echo "=== Top-level packages in javasteam.jar ==="
+          jar tf javasteam.jar | grep '\.class$' | sed 's|/[^/]*\.class$||' | sort -u | head -60
+          echo ""
+          echo "=== EResult, SteamClient, ProtocolTypes locations ==="
+          jar tf javasteam.jar | grep -E "EResult|SteamClient|ProtocolTypes" | grep '\.class' | head -20
+
       - name: Compile Kotlin Steam extension → classes.dex (for classes19+)
         run: |
           ANDROID_JAR=$(ls $ANDROID_SDK_ROOT/platforms/android-*/android.jar 2>/dev/null \
