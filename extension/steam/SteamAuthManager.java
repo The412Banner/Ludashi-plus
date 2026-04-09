@@ -151,9 +151,9 @@ public final class SteamAuthManager {
              * Returns a completed future immediately — we just inform the UI.
              */
             @Override
-            public CompletableFuture<Void> acceptDeviceConfirmation() {
+            public CompletableFuture<Boolean> acceptDeviceConfirmation() {
                 mainHandler.post(listener::onDeviceConfirmationRequired);
-                return CompletableFuture.completedFuture(null);
+                return CompletableFuture.completedFuture(true);
             }
 
             /**
@@ -169,11 +169,11 @@ public final class SteamAuthManager {
             }
 
             /**
-             * Called when Steam Guard TOTP code is required (mobile authenticator).
+             * Called when Steam Guard TOTP/device code is required (mobile authenticator).
              * Returns a future that completes when submitGuardCode() is called from UI.
              */
             @Override
-            public CompletableFuture<String> getTotpCode(boolean previousCodeWrong) {
+            public CompletableFuture<String> getDeviceCode(boolean previousCodeWrong) {
                 CompletableFuture<String> future = new CompletableFuture<>();
                 pendingCodeFuture = future;
                 mainHandler.post(() -> listener.onSteamGuardTotpRequired(previousCodeWrong));
