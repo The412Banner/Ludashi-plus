@@ -137,8 +137,23 @@ jobs:
           jar tf "$MAIN_JAR" | grep -E "SteamClient|EResult|ProtocolTypes" | head -5 || true
 
           cp "$MAIN_JAR" ../javasteam.jar
+
+          # Grab the exact protobuf-java JAR that Gradle resolved for JavaSteam.
+          # Using a hardcoded version (e.g. 3.25.4) risks a mismatch: JavaSteam's
+          # generated protobufs reference RuntimeVersion$RuntimeDomain which only
+          # exists in protobuf 4.x. Pulling from Gradle's own cache guarantees the
+          # same version JavaSteam was compiled against.
+          PROTO_JAR=$(find ~/.gradle/caches -name "protobuf-java-*.jar" \
+            ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | head -1)
+          if [ -n "$PROTO_JAR" ]; then
+            echo "Using protobuf JAR from Gradle cache: $PROTO_JAR"
+            cp "$PROTO_JAR" ../protobuf-java.jar
+          else
+            echo "ERROR: protobuf-java JAR not found in Gradle cache"; exit 1
+          fi
+
           cd ..
-          ls -lh javasteam.jar
+          ls -lh javasteam.jar protobuf-java.jar
 
       - name: Decode base APK with apktool
         run: |
@@ -177,9 +192,8 @@ jobs:
         run: |
           wget -q "https://repo1.maven.org/maven2/org/json/json/20240303/json-20240303.jar" \
             -O org-json.jar
-          # protobuf-java: needed to compile SteamDepotDownloader (ContentManifest.parseFrom)
-          wget -q "https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.25.4/protobuf-java-3.25.4.jar" \
-            -O protobuf-java.jar
+          # protobuf-java.jar is copied from the Gradle cache in the "Build JavaSteam" step
+          # (exact version that JavaSteam was compiled against — avoids RuntimeVersion mismatch)
           # zxing-core: QR code generation for QrLoginActivity
           wget -q "https://repo1.maven.org/maven2/com/google/zxing/core/3.5.2/core-3.5.2.jar" \
             -O zxing-core.jar
