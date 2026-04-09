@@ -178,21 +178,48 @@ jobs:
             echo "ERROR: protobuf-java JAR not found in Gradle cache"; exit 1
           fi
 
-          # kotlinx-coroutines-jdk8: JavaSteam's SteamAuthentication.beginAuthSessionViaQR()
-          # calls kotlinx.coroutines.future.await() from this artifact. The base APK has
-          # kotlinx-coroutines-core but NOT the jdk8 extension (no CompletableFuture on Android).
-          # Pull exact version from Gradle cache to match what JavaSteam was compiled against.
-          COROUTINES_JDK8_JAR=$(find ~/.gradle/caches -name "kotlinx-coroutines-jdk8-*.jar" \
-            ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | head -1)
-          if [ -n "$COROUTINES_JDK8_JAR" ]; then
-            echo "Using kotlinx-coroutines-jdk8 from Gradle cache: $COROUTINES_JDK8_JAR"
-            cp "$COROUTINES_JDK8_JAR" ../kotlinx-coroutines-jdk8.jar
-          else
-            echo "ERROR: kotlinx-coroutines-jdk8 JAR not found in Gradle cache"; exit 1
+          # kotlinx.coroutines.future.FutureKt: JavaSteam's beginAuthSessionViaQR() calls
+          # await() from this class. In coroutines ≥1.7, FutureKt moved from the separate
+          # kotlinx-coroutines-jdk8 artifact into kotlinx-coroutines-core-jvm. Gradle won't
+          # cache a separate jdk8 JAR for modern JavaSteam builds.
+          # Strategy: scan all coroutines JARs in Gradle cache for FutureKt.class, then
+          # extract ONLY the kotlinx/coroutines/future/ package — this avoids shadowing
+          # the base APK's existing (older) kotlinx-coroutines-core classes.
+          echo "=== Coroutines JARs in Gradle cache ==="
+          find ~/.gradle/caches -name "kotlinx-coroutines*.jar" \
+            ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | sort
+
+          FUTURE_JAR=$(find ~/.gradle/caches -name "*.jar" \
+            ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | \
+            while read j; do
+              jar tf "$j" 2>/dev/null | grep -q "kotlinx/coroutines/future/FutureKt" \
+                && echo "$j" && break
+            done | head -1)
+
+          if [ -z "$FUTURE_JAR" ]; then
+            echo "FutureKt not in Gradle cache — detecting coroutines version for Maven fallback"
+            COROUTINES_VER=$(find ~/.gradle/caches -name "kotlinx-coroutines-core-jvm-*.jar" \
+              ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | \
+              grep -oP 'kotlinx-coroutines-core-jvm-\K[0-9.]+' | sort -V | tail -1 || echo "")
+            [ -z "$COROUTINES_VER" ] && COROUTINES_VER="1.8.1"
+            echo "Downloading kotlinx-coroutines-jdk8-${COROUTINES_VER} from Maven Central"
+            wget -q "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-jdk8/${COROUTINES_VER}/kotlinx-coroutines-jdk8-${COROUTINES_VER}.jar" \
+              -O /tmp/coroutines-jdk8-fallback.jar
+            FUTURE_JAR="/tmp/coroutines-jdk8-fallback.jar"
           fi
 
+          echo "Extracting kotlinx/coroutines/future/ from: $FUTURE_JAR"
+          FUTURE_ENTRIES=$(jar tf "$FUTURE_JAR" | grep "^kotlinx/coroutines/future/")
+          echo "Entries to extract: $(echo "$FUTURE_ENTRIES" | wc -l)"
+          mkdir -p coroutines_future_extract
+          cd coroutines_future_extract
+          jar xf "$FUTURE_JAR" $FUTURE_ENTRIES
           cd ..
-          ls -lh javasteam.jar protobuf-java.jar kotlinx-coroutines-jdk8.jar
+          echo "Extracted $(find coroutines_future_extract -name '*.class' | wc -l) classes"
+          cp -r coroutines_future_extract ../coroutines_future_extract
+
+          cd ..
+          ls -lh javasteam.jar protobuf-java.jar
 
       - name: Decode base APK with apktool
         run: |
@@ -252,7 +279,7 @@ jobs:
           # Both sets share android.jar.
           mkdir -p ext_java_classes
           javac -source 8 -target 8 \
-            -cp "$ANDROID_JAR:org-json.jar:javasteam.jar:protobuf-java.jar:zxing-core.jar:commons-lang3.jar:kotlinx-coroutines-jdk8.jar" \
+            -cp "$ANDROID_JAR:org-json.jar:javasteam.jar:protobuf-java.jar:zxing-core.jar:commons-lang3.jar" \
             -d ext_java_classes \
             extension/*.java extension/steam/*.java
           echo "Compiled $(find ext_java_classes -name '*.class' | wc -l) Java class files"
@@ -262,10 +289,10 @@ jobs:
           $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/d8 \
             --release --min-api 26 --output ext_java_dex \
             $(find ext_java_classes -name "*.class") \
+            $(find coroutines_future_extract -name "*.class") \
             zxing-core.jar \
             commons-lang3.jar \
-            protobuf-java.jar \
-            kotlinx-coroutines-jdk8.jar
+            protobuf-java.jar
           ls -lh ext_java_dex/classes.dex
           echo "classes17.dex ready: $(du -sh ext_java_dex/classes.dex | cut -f1)"
 
