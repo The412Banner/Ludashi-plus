@@ -126,6 +126,26 @@ jobs:
           cd ..
           ls -lh javasteam.jar
 
+      - name: Inspect CDN/depot download API (temp — remove after Phase 6)
+        run: |
+          echo "=== CDN-related classes in javasteam.jar ==="
+          jar tf javasteam.jar | grep -i "cdn\|depot\|content\|manifest\|chunk" | grep -v "test\|Test" | sort
+          echo "=== SteamContent handler (if present) ==="
+          CONTENT_CLASS=$(jar tf javasteam.jar | grep -i "SteamContent" | head -1 | sed 's|/|.|g;s|\.class$||')
+          echo "Class: $CONTENT_CLASS"
+          [ -n "$CONTENT_CLASS" ] && javap -p -classpath javasteam.jar "$CONTENT_CLASS" 2>/dev/null || echo "(not found)"
+          echo "=== CDNClient (if present) ==="
+          CDN_CLASS=$(jar tf javasteam.jar | grep -E "cdn/Client\.class|CDNClient\.class" | head -1 | sed 's|/|.|g;s|\.class$||')
+          echo "Class: $CDN_CLASS"
+          [ -n "$CDN_CLASS" ] && javap -p -classpath javasteam.jar "$CDN_CLASS" 2>/dev/null | head -60 || echo "(not found)"
+          echo "=== DepotManifest / ManifestFile (if present) ==="
+          DEPOT_CLASS=$(jar tf javasteam.jar | grep -i "DepotManifest\|ManifestFile" | head -1 | sed 's|/|.|g;s|\.class$||')
+          echo "Class: $DEPOT_CLASS"
+          [ -n "$DEPOT_CLASS" ] && javap -p -classpath javasteam.jar "$DEPOT_CLASS" 2>/dev/null | head -40 || echo "(not found)"
+          echo "=== SteamApps depot-related methods ==="
+          javap -p -classpath javasteam.jar in.dragonbra.javasteam.steam.handlers.steamapps.SteamApps 2>/dev/null \
+            | grep -i "depot\|key\|cdn\|manifest\|server" || echo "(none)"
+
       - name: Decode base APK with apktool
         run: |
           APK=$(ls base/*.apk | head -1)

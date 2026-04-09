@@ -390,3 +390,36 @@ Implement PICS-based library sync: after login, resolve owned games from license
 | Commit | Tag | Description | CI Run | Result |
 |---|---|---|---|---|
 | `8f05b6d` | v1.0.0-pre9 | feat: Phase 4 — Steam library sync via PICS | 24181414708 | ✅ success |
+
+---
+
+## Session: 2026-04-09 — Steam Integration Phase 5 (Game Detail Screen)
+
+### Goal
+Implement game detail screen (header art, metadata, Install/Launch buttons) and wire up item clicks in the library list.
+
+### What Changed
+
+**New: `extension/steam/SteamGameDetailActivity.kt`**
+- Receives `EXTRA_APP_ID` Intent extra; loads `SteamGame` from `SteamDatabase`
+- Header image loaded async via `java.net.URL` + `BitmapFactory` (Steam CDN header.jpg)
+- Shows: game name (22sp), type badge, size (Phase 6 will populate), install status
+- Install button: "Install" (blue) when not installed, "Uninstall" (red) when installed
+- Launch button: grayed/disabled until `isInstalled=true` (Phase 7 wires up LudashiLaunchBridge)
+- `SteamEventListener`: handles `DownloadProgress:appId:done:total`, `DownloadComplete:appId`, `DownloadFailed:appId:reason` — updates progress bar + button states
+- Phase 6 stub: Install button shows Toast "Download engine coming in Phase 6"
+- Phase 7 stub: Launch button shows Toast "Launch coming in Phase 7"
+
+**Modified: `extension/steam/SteamGamesActivity.kt`**
+- Added `setOnItemClickListener` — tapping a row launches `SteamGameDetailActivity` with `EXTRA_APP_ID`
+
+**Modified: `patches/AndroidManifest.xml`**
+- Registered `SteamGameDetailActivity`
+
+**Modified: `.github/workflows/build.yml`**
+- Added "Inspect CDN/depot download API (temp)" step — discovers CDN/depot classes in JavaSteam JAR for Phase 6 implementation
+
+### Commits & Builds
+| Commit | Tag | Description | CI Run | Result |
+|---|---|---|---|---|
+| TBD | v1.0.0-pre10 | feat: Phase 5 — game detail screen + click wiring | TBD | pending |

@@ -1,6 +1,7 @@
 package com.winlator.cmod.store
 
 import android.app.Activity
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
@@ -164,6 +165,11 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
             setBackgroundColor(Color.parseColor("#1B1B1B"))
             divider = null
             dividerHeight = dp(1)
+            setOnItemClickListener { _, _, pos, _ ->
+                val game = games.getOrNull(pos) ?: return@setOnItemClickListener
+                startActivity(Intent(this@SteamGamesActivity, SteamGameDetailActivity::class.java)
+                    .putExtra(SteamGameDetailActivity.EXTRA_APP_ID, game.appId))
+            }
         }
         root.addView(listView, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
