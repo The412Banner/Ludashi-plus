@@ -170,6 +170,10 @@ jobs:
           # zxing-core: QR code generation for QrLoginActivity
           wget -q "https://repo1.maven.org/maven2/com/google/zxing/core/3.5.2/core-3.5.2.jar" \
             -O zxing-core.jar
+          # commons-lang3: runtime dep of JavaSteam HardwareUtils.getMachineName()
+          # (called from AuthSessionDetails.<init>) — not bundled in plain jar task output
+          wget -q "https://repo1.maven.org/maven2/org/apache/commons/commons-lang3/3.14.0/commons-lang3-3.14.0.jar" \
+            -O commons-lang3.jar
 
       - name: Compile Java store extension (GOG/Epic/Amazon + Steam) → classes17.dex
         run: |
@@ -182,7 +186,7 @@ jobs:
           # Both sets share android.jar.
           mkdir -p ext_java_classes
           javac -source 8 -target 8 \
-            -cp "$ANDROID_JAR:org-json.jar:javasteam.jar:protobuf-java.jar:zxing-core.jar" \
+            -cp "$ANDROID_JAR:org-json.jar:javasteam.jar:protobuf-java.jar:zxing-core.jar:commons-lang3.jar" \
             -d ext_java_classes \
             extension/*.java extension/steam/*.java
           echo "Compiled $(find ext_java_classes -name '*.class' | wc -l) Java class files"
@@ -192,7 +196,8 @@ jobs:
           $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/d8 \
             --release --min-api 26 --output ext_java_dex \
             $(find ext_java_classes -name "*.class") \
-            zxing-core.jar
+            zxing-core.jar \
+            commons-lang3.jar
           ls -lh ext_java_dex/classes.dex
           echo "classes17.dex ready: $(du -sh ext_java_dex/classes.dex | cut -f1)"
 

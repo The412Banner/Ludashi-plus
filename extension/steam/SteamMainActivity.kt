@@ -1,32 +1,70 @@
 package com.winlator.cmod.store
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 
 /**
  * Entry point for the Steam store tab.
  *
- * Phase 1 stub — shows a placeholder toast and starts the foreground service.
- * Full login/library UI is implemented in Phase 7.
+ * On Android 13+ (API 33) POST_NOTIFICATIONS requires a runtime grant before
+ * we can start the foreground service. We request it here and proceed in
+ * onRequestPermissionsResult (or immediately if already granted / pre-API 33).
+ *
+ * The notification prompt appears at a natural checkpoint — after the user
+ * consciously opened the Steam tab — rather than interrupting first-run setup.
  */
 class SteamMainActivity : Activity() {
 
+    companion object {
+        private const val REQ_NOTIFICATIONS = 1001
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Initialise prefs (idempotent)
         SteamPrefs.init(this)
 
-        // Start foreground service (keeps CM connection alive)
-        SteamForegroundService.start(this)
+        if (needsNotificationPermission()) {
+            requestPermissions(
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                REQ_NOTIFICATIONS,
+            )
+            // proceed in onRequestPermissionsResult
+        } else {
+            proceed()
+        }
+    }
 
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_NOTIFICATIONS) {
+            // Proceed regardless of whether the user granted or denied —
+            // the service will start but just won't show a persistent notification
+            // if denied (Android silently suppresses it; no crash).
+            proceed()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+
+    private fun needsNotificationPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < 33) return false
+        return checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun proceed() {
+        SteamForegroundService.start(this)
         if (SteamPrefs.isLoggedIn) {
-            // Already have a session — go straight to library
             startActivity(Intent(this, SteamGamesActivity::class.java))
         } else {
-            // Need to log in first
             startActivity(Intent(this, SteamLoginActivity::class.java))
         }
         finish()
