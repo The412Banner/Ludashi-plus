@@ -350,6 +350,46 @@ Note: method is `getDeviceCode`, NOT `getTotpCode` — only discovered via `java
 
 ---
 
+---
+
+## Session: 2026-04-09 — Steam Integration Phase 7 (Launch Bridge)
+
+### Goal
+Wire up the Launch button in `SteamGameDetailActivity` to `LudashiLaunchBridge`.
+
+### What Changed
+
+**Modified: `extension/steam/SteamGameDetailActivity.kt`**
+- `onLaunchClicked()` now:
+  1. Scans `game.installDir` tree for `.exe` files using `File.walkTopDown()`
+  2. Skips paths containing redist/redistribut/vcredist/directx/etc.
+  3. Picks the largest `.exe` found (heuristic: main executable is usually the biggest)
+  4. Calls `LudashiLaunchBridge.addToLauncher(activity, gameName, exePath)`
+     - Shows container picker dialog
+     - Writes `.desktop` shortcut to selected Wine container desktop dir
+     - Shortcut appears in Ludashi's Shortcuts nav item for launch + Wine config
+- If no `.exe` found: Toast "No executable found in install directory"
+- Helper method `findExe(File)` encapsulates the scan logic
+
+### Architecture
+Same pattern as GOG fallback exe scan (`GogDownloadManager` beta40). LudashiLaunchBridge handles all the Winlator reflection work — Steam detail activity just provides game name + exe path.
+
+### Commits & Builds
+| Commit | Tag | Description | CI Run | Result |
+|---|---|---|---|---|
+| `b4cf47b` | v1.0.0-pre12 | feat: Phase 7 — Steam game launch via LudashiLaunchBridge | [24183563783](https://github.com/The412Banner/Ludashi-plus/actions/runs/24183563783) | ✅ **success** |
+
+---
+
+**STOP — Phase 7 complete. All 7 phases implemented. Ready for device testing.**
+
+### What needs testing (v1.0.0-pre12)
+1. Steam login (credential flow + Steam Guard)
+2. Library sync — games appear in list
+3. Game detail screen — header art loads, metadata shows
+4. Install — depot download starts, progress updates, completes
+5. Launch — exe scan finds game exe, container picker appears, shortcut written, game accessible from Shortcuts
+
 *Updated automatically after every commit and build.*
 
 ---
