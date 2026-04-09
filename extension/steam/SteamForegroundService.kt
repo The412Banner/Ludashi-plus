@@ -51,7 +51,7 @@ class SteamForegroundService : Service() {
         startForeground(NOTIFICATION_ID, buildNotification("Connecting to Steam…"))
         Log.i(TAG, "Service started")
 
-        SteamRepository.getInstance().initialize()
+        SteamRepository.getInstance().initialize(this)
         SteamRepository.getInstance().connect()
 
         return START_STICKY   // restart if killed by OS
