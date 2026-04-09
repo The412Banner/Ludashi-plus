@@ -218,6 +218,25 @@ jobs:
           echo "Extracted $(find coroutines_future_extract -name '*.class' | wc -l) classes"
           cp -r coroutines_future_extract ../coroutines_future_extract
 
+          # kotlin.enums: JavaSteam's ServerQuality.kt uses enumEntries() (Kotlin 1.9+ API)
+          # which generates bytecode referencing kotlin.enums.EnumEntriesKt. The base APK's
+          # Kotlin stdlib may predate 1.9 and not include this class → hard crash at runtime.
+          # Extract ONLY kotlin/enums/ from our kotlinc stdlib to avoid shadowing other stdlib.
+          KOTLIN_STDLIB="$HOME/kotlinc/lib/kotlin-stdlib.jar"
+          ENUM_ENTRIES=$(jar tf "$KOTLIN_STDLIB" 2>/dev/null | grep "^kotlin/enums/")
+          if [ -n "$ENUM_ENTRIES" ]; then
+            echo "Extracting kotlin/enums/ from kotlinc stdlib..."
+            mkdir -p kotlin_enums_extract
+            cd kotlin_enums_extract
+            jar xf "$KOTLIN_STDLIB" $ENUM_ENTRIES
+            cd ..
+            echo "Extracted $(find kotlin_enums_extract -name '*.class' | wc -l) kotlin.enums classes"
+          else
+            echo "kotlin/enums/ not found in kotlinc stdlib — creating empty placeholder"
+            mkdir -p kotlin_enums_extract
+          fi
+          cp -r kotlin_enums_extract ../kotlin_enums_extract
+
           cd ..
           ls -lh javasteam.jar protobuf-java.jar
 
@@ -290,6 +309,7 @@ jobs:
             --release --min-api 26 --output ext_java_dex \
             $(find ext_java_classes -name "*.class") \
             $(find coroutines_future_extract -name "*.class") \
+            $(find kotlin_enums_extract -name "*.class") \
             zxing-core.jar \
             commons-lang3.jar \
             protobuf-java.jar
