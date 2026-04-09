@@ -190,9 +190,13 @@ jobs:
           echo "Compiling Kotlin files:"
           echo "$KT_FILES"
 
+          # -no-stdlib: don't auto-include stdlib in the output (it's already in the base APK).
+          # But we still need it on the COMPILATION classpath so built-in types resolve.
+          # kotlin-stdlib.jar lives in $HOME/kotlinc/lib/ from the unzipped compiler distribution.
+          KOTLIN_STDLIB="$HOME/kotlinc/lib/kotlin-stdlib.jar"
           kotlinc \
             -no-stdlib \
-            -classpath "$ANDROID_JAR:javasteam.jar" \
+            -classpath "$ANDROID_JAR:javasteam.jar:$KOTLIN_STDLIB" \
             -d ext_kotlin_classes \
             $KT_FILES
           echo "Kotlin compilation done: $(find ext_kotlin_classes -name '*.class' | wc -l) class files"
