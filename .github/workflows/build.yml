@@ -163,6 +163,9 @@ jobs:
         run: |
           wget -q "https://repo1.maven.org/maven2/org/json/json/20240303/json-20240303.jar" \
             -O org-json.jar
+          # protobuf-java: needed to compile SteamDepotDownloader (ContentManifest.parseFrom)
+          wget -q "https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.25.4/protobuf-java-3.25.4.jar" \
+            -O protobuf-java.jar
 
       - name: Compile Java store extension (GOG/Epic/Amazon + Steam) → classes17.dex
         run: |
@@ -171,11 +174,11 @@ jobs:
           echo "Using android.jar: $ANDROID_JAR"
 
           # extension/*.java    — GOG/Epic/Amazon (needs org-json.jar)
-          # extension/steam/*.java — SteamRepository (needs javasteam.jar)
-          # Both sets share android.jar; javasteam.jar on classpath is harmless for non-Steam files.
+          # extension/steam/*.java — SteamRepository + SteamDepotDownloader (needs javasteam.jar + protobuf-java.jar)
+          # Both sets share android.jar.
           mkdir -p ext_java_classes
           javac -source 8 -target 8 \
-            -cp "$ANDROID_JAR:org-json.jar:javasteam.jar" \
+            -cp "$ANDROID_JAR:org-json.jar:javasteam.jar:protobuf-java.jar" \
             -d ext_java_classes \
             extension/*.java extension/steam/*.java
           echo "Compiled $(find ext_java_classes -name '*.class' | wc -l) Java class files"
