@@ -174,9 +174,10 @@ public final class SteamRepository {
         if (steamClient != null) return;
 
         SteamConfiguration config = SteamConfiguration.create(b -> {
-            // Allow both WebSocket AND TCP so JavaSteam can fall back if one fails.
-            // WebSocket-only silently hangs on some networks; TCP is more reliable.
-            b.withProtocolTypes(EnumSet.of(ProtocolTypes.WEB_SOCKET, ProtocolTypes.TCP));
+            // TCP-only: WebSocket requires Ktor CIO engine (io.ktor.client.engine.cio.CIO)
+            // which is not bundled and causes a hard crash at runtime. TCP works on all
+            // standard networks (port 27017) and is fully supported by Steam CM servers.
+            b.withProtocolTypes(EnumSet.of(ProtocolTypes.TCP));
             b.withConnectionTimeout(30_000L);
             // REQUIRED: allow JavaSteam to fetch the CM server list from Steam's directory API.
             // Without this, if no server list is cached, getNextServerCandidate() returns null
