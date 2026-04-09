@@ -178,8 +178,21 @@ jobs:
             echo "ERROR: protobuf-java JAR not found in Gradle cache"; exit 1
           fi
 
+          # kotlinx-coroutines-jdk8: JavaSteam's SteamAuthentication.beginAuthSessionViaQR()
+          # calls kotlinx.coroutines.future.await() from this artifact. The base APK has
+          # kotlinx-coroutines-core but NOT the jdk8 extension (no CompletableFuture on Android).
+          # Pull exact version from Gradle cache to match what JavaSteam was compiled against.
+          COROUTINES_JDK8_JAR=$(find ~/.gradle/caches -name "kotlinx-coroutines-jdk8-*.jar" \
+            ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | head -1)
+          if [ -n "$COROUTINES_JDK8_JAR" ]; then
+            echo "Using kotlinx-coroutines-jdk8 from Gradle cache: $COROUTINES_JDK8_JAR"
+            cp "$COROUTINES_JDK8_JAR" ../kotlinx-coroutines-jdk8.jar
+          else
+            echo "ERROR: kotlinx-coroutines-jdk8 JAR not found in Gradle cache"; exit 1
+          fi
+
           cd ..
-          ls -lh javasteam.jar protobuf-java.jar
+          ls -lh javasteam.jar protobuf-java.jar kotlinx-coroutines-jdk8.jar
 
       - name: Decode base APK with apktool
         run: |
@@ -239,7 +252,7 @@ jobs:
           # Both sets share android.jar.
           mkdir -p ext_java_classes
           javac -source 8 -target 8 \
-            -cp "$ANDROID_JAR:org-json.jar:javasteam.jar:protobuf-java.jar:zxing-core.jar:commons-lang3.jar" \
+            -cp "$ANDROID_JAR:org-json.jar:javasteam.jar:protobuf-java.jar:zxing-core.jar:commons-lang3.jar:kotlinx-coroutines-jdk8.jar" \
             -d ext_java_classes \
             extension/*.java extension/steam/*.java
           echo "Compiled $(find ext_java_classes -name '*.class' | wc -l) Java class files"
@@ -251,7 +264,8 @@ jobs:
             $(find ext_java_classes -name "*.class") \
             zxing-core.jar \
             commons-lang3.jar \
-            protobuf-java.jar
+            protobuf-java.jar \
+            kotlinx-coroutines-jdk8.jar
           ls -lh ext_java_dex/classes.dex
           echo "classes17.dex ready: $(du -sh ext_java_dex/classes.dex | cut -f1)"
 
