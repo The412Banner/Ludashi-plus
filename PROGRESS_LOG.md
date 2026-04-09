@@ -422,7 +422,7 @@ Implement game detail screen (header art, metadata, Install/Launch buttons) and 
 ### Commits & Builds
 | Commit | Tag | Description | CI Run | Result |
 |---|---|---|---|---|
-| TBD | v1.0.0-pre10 | feat: Phase 5 — game detail screen + click wiring | TBD | pending |
+| `0457423` | v1.0.0-pre10 | feat: Phase 5 — game detail screen + click wiring | [24182002486](https://github.com/The412Banner/Ludashi-plus/actions/runs/24182002486) | ✅ success |
 
 ---
 
@@ -470,4 +470,10 @@ Implement full depot download: manifest IDs from PICS, depot key fetching, CDN d
 ### Commits & Builds
 | Commit | Tag | Description | CI Run | Result |
 |---|---|---|---|---|
-| TBD | v1.0.0-pre11 | feat: Phase 6 — depot download engine | TBD | pending |
+| `12430c3` | v1.0.0-pre11 | feat: Phase 6 — depot download engine | [24182600708](https://github.com/The412Banner/Ludashi-plus/actions/runs/24182600708) | ❌ emit() private; protobuf-java missing |
+| `521a419` | v1.0.0-pre11 | fix: add protobuf-java.jar to javac classpath | [24182977284](https://github.com/The412Banner/Ludashi-plus/actions/runs/24182977284) | ❌ emit() fix not committed |
+| `2f3c2e8` | v1.0.0-pre11 | fix: commit emit() public + protobuf-java.jar | [24183211903](https://github.com/The412Banner/Ludashi-plus/actions/runs/24183211903) | ✅ **success** |
+
+### Root Causes Fixed (Phase 6 debugging chain)
+1. `emit()` was edited locally but never committed — pushed `private` to GitHub; fix: commit local change
+2. `ContentManifest.parseFrom()` requires `com.google.protobuf.*` at compile time; plain `./gradlew jar` does not bundle transitive deps → download `protobuf-java-3.25.4.jar` and add to javac `-cp`
