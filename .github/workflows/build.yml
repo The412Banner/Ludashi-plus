@@ -83,30 +83,48 @@ jobs:
 
       - name: Build JavaSteam from source
         run: |
-          # Clone and build JavaSteam — JitPack SNAPSHOT URLs are unreliable (build-on-demand,
-          # frequently returns 404 or empty on cold cache). Building from source is the only
-          # reliable approach for a SNAPSHOT dependency.
+          # Clone and build JavaSteam.
+          # JavaSteam is a multi-module Gradle project; we must find the submodule JAR
+          # that contains the main library classes (SteamClient, EResult, etc.).
           git clone --depth 1 https://github.com/LossyDragon/JavaSteam javasteam_src
           cd javasteam_src
 
-          # Build the fat/shadow JAR (includes all JavaSteam classes, no transitive deps)
-          # The shadowJar task produces a self-contained JAR. Fall back to plain jar if absent.
-          if ./gradlew shadowJar --no-daemon -q 2>&1 | tail -5; then
-            JAR=$(find . -name "*-all.jar" -o -name "*shadow*.jar" 2>/dev/null \
-              | grep -v "sources\|javadoc" | head -1)
-          fi
-          if [ -z "$JAR" ] || [ ! -s "$JAR" ]; then
-            echo "shadowJar not available, trying jar task..."
-            ./gradlew jar --no-daemon -q 2>&1 | tail -5
-            JAR=$(find . -path "*/build/libs/*.jar" 2>/dev/null \
-              | grep -v "sources\|javadoc\|test" | head -1)
+          echo "=== Project structure ==="
+          ls -1
+          cat settings.gradle 2>/dev/null || cat settings.gradle.kts 2>/dev/null || true
+
+          # Build all subprojects' JARs (plain jar — no shadow relocation)
+          echo "Building all JARs..."
+          ./gradlew jar --no-daemon 2>&1 | tail -20
+
+          echo "=== All built JARs ==="
+          find . -name "*.jar" -path "*/build/libs/*" | grep -v "sources\|javadoc\|test"
+
+          # Find the JAR that contains SteamClient — that's the main library
+          MAIN_JAR=""
+          for j in $(find . -name "*.jar" -path "*/build/libs/*" \
+              | grep -v "sources\|javadoc\|test" | sort); do
+            if jar tf "$j" 2>/dev/null | grep -q "SteamClient.class"; then
+              MAIN_JAR="$j"
+              echo "Found library JAR containing SteamClient: $MAIN_JAR"
+              break
+            fi
+          done
+
+          if [ -z "$MAIN_JAR" ]; then
+            # Fallback: pick the largest JAR
+            MAIN_JAR=$(find . -name "*.jar" -path "*/build/libs/*" \
+              | grep -v "sources\|javadoc\|test" \
+              | while read f; do echo "$(wc -c < "$f") $f"; done \
+              | sort -rn | head -1 | cut -d' ' -f2-)
+            echo "Fallback: using largest JAR: $MAIN_JAR"
           fi
 
-          echo "Built JAR: $JAR ($(du -sh "$JAR" | cut -f1))"
-          cp "$JAR" ../javasteam.jar
+          echo "Using JAR: $MAIN_JAR ($(du -sh "$MAIN_JAR" | cut -f1))"
+          jar tf "$MAIN_JAR" | grep -E "SteamClient|EResult|ProtocolTypes" | head -5 || true
+          cp "$MAIN_JAR" ../javasteam.jar
           cd ..
           ls -lh javasteam.jar
-          echo "JavaSteam JAR: $(du -sh javasteam.jar | cut -f1)"
 
       - name: Decode base APK with apktool
         run: |
@@ -178,14 +196,6 @@ jobs:
           # d8 may produce multiple DEX files if the JAR is large
           echo "JavaSteam DEX output:"
           ls -lh ext_steam_lib_dex/
-
-      - name: Inspect JavaSteam JAR package structure
-        run: |
-          echo "=== Top-level packages in javasteam.jar ==="
-          jar tf javasteam.jar | grep '\.class$' | sed 's|/[^/]*\.class$||' | sort -u | head -60
-          echo ""
-          echo "=== EResult, SteamClient, ProtocolTypes locations ==="
-          jar tf javasteam.jar | grep -E "EResult|SteamClient|ProtocolTypes" | grep '\.class' | head -20
 
       - name: Compile Kotlin Steam extension → classes.dex (for classes19+)
         run: |
