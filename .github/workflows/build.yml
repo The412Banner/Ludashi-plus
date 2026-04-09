@@ -81,22 +81,54 @@ jobs:
           echo "$HOME/kotlinc/bin" >> $GITHUB_PATH
           kotlinc -version
 
-      - name: Download JavaSteam JAR
+      - name: Download JavaSteam JAR via Gradle
         run: |
-          # JavaSteam 1.8.1-SNAPSHOT from JitPack
-          # JitPack snapshot URL format: https://jitpack.io/in/dragonbra/javasteam/-SNAPSHOT/javasteam--SNAPSHOT.jar
-          # Using the specific commit hash build for reliability
-          JAVASTEAM_URL="https://jitpack.io/in/dragonbra/javasteam/1.8.1-SNAPSHOT/javasteam-1.8.1-SNAPSHOT.jar"
-          echo "Downloading JavaSteam..."
-          wget -q --timeout=120 "$JAVASTEAM_URL" -O javasteam.jar || {
-            echo "JitPack direct failed, trying alternate JitPack URL..."
-            # Try build from main branch
-            wget -q --timeout=120 \
-              "https://jitpack.io/in/dragonbra/javasteam/main-SNAPSHOT/javasteam-main-SNAPSHOT.jar" \
-              -O javasteam.jar
+          # JitPack SNAPSHOT artifacts require Gradle resolution (build-on-demand — wget 404s cold)
+          # Write a minimal build.gradle that resolves and copies the JAR
+          mkdir -p javasteam_dl
+          cat > javasteam_dl/build.gradle << 'GRADLE_EOF'
+          apply plugin: 'base'
+          repositories {
+              maven { url 'https://jitpack.io' }
+              mavenCentral()
           }
+          configurations { steamLib }
+          dependencies {
+              // in.dragonbra:javasteam is published to JitPack with custom domain
+              steamLib('in.dragonbra:javasteam:1.8.1-SNAPSHOT') { transitive = false }
+          }
+          task copyJar(type: Copy) {
+              from configurations.steamLib
+              into project.projectDir.parent
+              rename { 'javasteam.jar' }
+          }
+          GRADLE_EOF
+
+          cat > javasteam_dl/settings.gradle << 'SETTINGS_EOF'
+          rootProject.name = 'javasteam-dl'
+          SETTINGS_EOF
+
+          echo "Resolving JavaSteam via Gradle..."
+          cd javasteam_dl && gradle copyJar --no-daemon -q 2>&1 | tail -20
+          cd ..
+
+          if [ ! -f javasteam.jar ] || [ ! -s javasteam.jar ]; then
+            echo "Gradle resolution failed, trying alternate JitPack GitHub-path URL..."
+            # JitPack also serves via com.github.{owner}/{repo} path
+            wget -q --timeout=180 \
+              "https://jitpack.io/com/github/LossyDragon/JavaSteam/1.8.1-SNAPSHOT/JavaSteam-1.8.1-SNAPSHOT.jar" \
+              -O javasteam.jar || true
+          fi
+
+          if [ ! -f javasteam.jar ] || [ ! -s javasteam.jar ]; then
+            echo "All JitPack attempts failed. Trying Maven Central snapshot..."
+            wget -q --timeout=180 \
+              "https://s01.oss.sonatype.org/content/repositories/snapshots/in/dragonbra/javasteam/1.8.1-SNAPSHOT/javasteam-1.8.1-20250101.000000-1.jar" \
+              -O javasteam.jar || true
+          fi
+
           ls -lh javasteam.jar
-          echo "JavaSteam JAR downloaded: $(du -sh javasteam.jar | cut -f1)"
+          echo "JavaSteam JAR: $(du -sh javasteam.jar | cut -f1)"
 
       - name: Decode base APK with apktool
         run: |
