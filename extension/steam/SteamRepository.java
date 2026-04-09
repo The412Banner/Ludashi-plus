@@ -86,6 +86,7 @@ public final class SteamRepository {
     // SharedPreferences (set on initialize)
     // -------------------------------------------------------------------------
 
+    private Context appContext = null;
     private SharedPreferences prefs = null;
 
     private String  pGet(String key, String  def) { return prefs != null ? prefs.getString(key, def)  : def; }
@@ -125,9 +126,13 @@ public final class SteamRepository {
 
     /** Build SteamClient and register callbacks. Idempotent. */
     public synchronized void initialize(Context ctx) {
-        if (prefs == null) {
-            prefs = ctx.getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        if (appContext == null) {
+            appContext = ctx.getApplicationContext();
         }
+        if (prefs == null) {
+            prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        }
+        SteamDatabase.getInstance(appContext);
         if (steamClient != null) return;
 
         SteamConfiguration config = SteamConfiguration.create(b -> {
@@ -300,8 +305,9 @@ public final class SteamRepository {
     // Accessors for downstream phases
     // -------------------------------------------------------------------------
 
-    public SteamClient getSteamClient() { return steamClient; }
-    public SteamApps   getSteamApps()   { return steamApps; }
+    public SteamClient   getSteamClient() { return steamClient; }
+    public SteamApps     getSteamApps()   { return steamApps; }
+    public SteamDatabase getDatabase()    { return SteamDatabase.getInstance(); }
 
     public String getUsername()     { return pGet("username", ""); }
     public String getRefreshToken() { return pGet("refresh_token", ""); }

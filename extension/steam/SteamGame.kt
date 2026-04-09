@@ -40,4 +40,22 @@ data class SteamGame(
         get() = if (iconHash.isNotEmpty())
             "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/$appId/$iconHash.jpg"
         else null
+
+    companion object {
+        /** Convert a Java GameRow (from SteamDatabase) to a SteamGame. */
+        fun fromGameRow(row: SteamDatabase.GameRow): SteamGame {
+            val depotIds = if (row.depotIds.isBlank()) emptyList()
+                else row.depotIds.split(",").mapNotNull { it.trim().toIntOrNull() }
+            return SteamGame(
+                appId      = row.appId,
+                name       = row.name,
+                installDir = row.installDir,
+                iconHash   = row.iconHash,
+                sizeBytes  = row.sizeBytes,
+                depotIds   = depotIds,
+                type       = row.type,
+                isInstalled = row.isInstalled,
+            )
+        }
+    }
 }
