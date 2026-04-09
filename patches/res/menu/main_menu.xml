@@ -15,6 +15,6 @@
         <item android:icon="@drawable/icon_open" android:id="@+id/main_menu_gog" android:title="GOG" />
         <item android:icon="@drawable/icon_open" android:id="@+id/main_menu_epic" android:title="Epic Games" />
         <item android:icon="@drawable/icon_open" android:id="@+id/main_menu_amazon" android:title="Amazon Games" />
-        <item android:icon="@drawable/icon_open" android:id="@+id/main_menu_steam" android:title="Steam" />
+        <item android:icon="@drawable/icon_open" android:id="@+id/main_menu_steam" android:title="Steam (Coming Soon)" android:enabled="false" />
     </group>
 </menu>
