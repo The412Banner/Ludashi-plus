@@ -126,6 +126,15 @@ jobs:
           cd ..
           ls -lh javasteam.jar
 
+      - name: Inspect IAuthenticator + UserConsoleAuthenticator (temporary)
+        run: |
+          echo "=== IAuthenticator all members (-p) ==="
+          javap -p -cp javasteam.jar in.dragonbra.javasteam.steam.authentication.IAuthenticator 2>&1
+          echo "=== UserConsoleAuthenticator all members (-p) ==="
+          javap -p -cp javasteam.jar in.dragonbra.javasteam.steam.authentication.UserConsoleAuthenticator 2>&1
+          echo "=== AuthSession pollingWaitForResult ==="
+          javap -p -cp javasteam.jar in.dragonbra.javasteam.steam.authentication.AuthSession 2>&1 | grep -i "poll\|result\|wait"
+
       - name: Decode base APK with apktool
         run: |
           APK=$(ls base/*.apk | head -1)
