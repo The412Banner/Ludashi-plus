@@ -30,7 +30,7 @@ public final class SteamDatabase extends SQLiteOpenHelper {
 
     private static final String TAG        = "SteamDB";
     private static final String DB_NAME    = "steam.db";
-    private static final int    DB_VERSION = 2;
+    private static final int    DB_VERSION = 3;
 
     // -------------------------------------------------------------------------
     // DDL
@@ -38,15 +38,18 @@ public final class SteamDatabase extends SQLiteOpenHelper {
 
     private static final String SQL_GAMES =
             "CREATE TABLE steam_games (" +
-            "  app_id       INTEGER PRIMARY KEY," +
-            "  name         TEXT    NOT NULL DEFAULT ''," +
-            "  install_dir  TEXT    NOT NULL DEFAULT ''," +
-            "  icon_hash    TEXT    NOT NULL DEFAULT ''," +
-            "  size_bytes   INTEGER NOT NULL DEFAULT 0," +
-            "  depot_ids    TEXT    NOT NULL DEFAULT ''," +
-            "  type         TEXT    NOT NULL DEFAULT 'game'," +
-            "  is_installed INTEGER NOT NULL DEFAULT 0," +
-            "  last_updated INTEGER NOT NULL DEFAULT 0" +
+            "  app_id          INTEGER PRIMARY KEY," +
+            "  name            TEXT    NOT NULL DEFAULT ''," +
+            "  install_dir     TEXT    NOT NULL DEFAULT ''," +
+            "  icon_hash       TEXT    NOT NULL DEFAULT ''," +
+            "  size_bytes      INTEGER NOT NULL DEFAULT 0," +
+            "  depot_ids       TEXT    NOT NULL DEFAULT ''," +
+            "  type            TEXT    NOT NULL DEFAULT 'game'," +
+            "  is_installed    INTEGER NOT NULL DEFAULT 0," +
+            "  last_updated    INTEGER NOT NULL DEFAULT 0," +
+            "  developer       TEXT    NOT NULL DEFAULT ''," +
+            "  metacritic_score INTEGER NOT NULL DEFAULT 0," +
+            "  genres          TEXT    NOT NULL DEFAULT ''" +
             ")";
 
     private static final String SQL_LICENSES =
@@ -146,20 +149,27 @@ public final class SteamDatabase extends SQLiteOpenHelper {
         public final String  installDir;
         public final String  iconHash;
         public final long    sizeBytes;
-        public final String  depotIds;    // comma-separated ints
+        public final String  depotIds;       // comma-separated ints
         public final String  type;
         public final boolean isInstalled;
+        public final String  developer;
+        public final int     metacriticScore; // 0 = not rated
+        public final String  genres;          // comma-separated genre names
 
         GameRow(int appId, String name, String installDir, String iconHash,
-                long sizeBytes, String depotIds, String type, boolean isInstalled) {
-            this.appId       = appId;
-            this.name        = name;
-            this.installDir  = installDir;
-            this.iconHash    = iconHash;
-            this.sizeBytes   = sizeBytes;
-            this.depotIds    = depotIds;
-            this.type        = type;
-            this.isInstalled = isInstalled;
+                long sizeBytes, String depotIds, String type, boolean isInstalled,
+                String developer, int metacriticScore, String genres) {
+            this.appId           = appId;
+            this.name            = name;
+            this.installDir      = installDir;
+            this.iconHash        = iconHash;
+            this.sizeBytes       = sizeBytes;
+            this.depotIds        = depotIds;
+            this.type            = type;
+            this.isInstalled     = isInstalled;
+            this.developer       = developer;
+            this.metacriticScore = metacriticScore;
+            this.genres          = genres;
         }
     }
 
@@ -191,26 +201,33 @@ public final class SteamDatabase extends SQLiteOpenHelper {
      * @param depotIds comma-separated depot IDs, e.g. "12345,12346"
      */
     public void upsertGame(int appId, String name, String iconHash,
-                           long sizeBytes, String depotIds, String type) {
+                           long sizeBytes, String depotIds, String type,
+                           String developer, int metacriticScore, String genres) {
         SQLiteDatabase db = getWritableDatabase();
         long now = System.currentTimeMillis() / 1000L;
         ContentValues cv = new ContentValues();
-        cv.put("app_id",       appId);
-        cv.put("name",         name != null ? name : "");
-        cv.put("icon_hash",    iconHash != null ? iconHash : "");
-        cv.put("size_bytes",   sizeBytes);
-        cv.put("depot_ids",    depotIds != null ? depotIds : "");
-        cv.put("type",         type != null ? type : "game");
-        cv.put("last_updated", now);
+        cv.put("app_id",           appId);
+        cv.put("name",             name != null ? name : "");
+        cv.put("icon_hash",        iconHash != null ? iconHash : "");
+        cv.put("size_bytes",       sizeBytes);
+        cv.put("depot_ids",        depotIds != null ? depotIds : "");
+        cv.put("type",             type != null ? type : "game");
+        cv.put("developer",        developer != null ? developer : "");
+        cv.put("metacritic_score", metacriticScore);
+        cv.put("genres",           genres != null ? genres : "");
+        cv.put("last_updated",     now);
         db.insertWithOnConflict("steam_games", null, cv, SQLiteDatabase.CONFLICT_IGNORE);
         // On collision: update metadata but preserve install state
         ContentValues upd = new ContentValues();
-        upd.put("name",         cv.getAsString("name"));
-        upd.put("icon_hash",    cv.getAsString("icon_hash"));
-        upd.put("size_bytes",   sizeBytes);
-        upd.put("depot_ids",    cv.getAsString("depot_ids"));
-        upd.put("type",         cv.getAsString("type"));
-        upd.put("last_updated", now);
+        upd.put("name",             cv.getAsString("name"));
+        upd.put("icon_hash",        cv.getAsString("icon_hash"));
+        upd.put("size_bytes",       sizeBytes);
+        upd.put("depot_ids",        cv.getAsString("depot_ids"));
+        upd.put("type",             cv.getAsString("type"));
+        upd.put("developer",        cv.getAsString("developer"));
+        upd.put("metacritic_score", metacriticScore);
+        upd.put("genres",           cv.getAsString("genres"));
+        upd.put("last_updated",     now);
         db.update("steam_games", upd, "app_id = ?", new String[]{String.valueOf(appId)});
     }
 
@@ -269,7 +286,8 @@ public final class SteamDatabase extends SQLiteOpenHelper {
 
     private List<GameRow> queryGames(String where, String[] args) {
         List<GameRow> result = new ArrayList<>();
-        String sql = "SELECT app_id,name,install_dir,icon_hash,size_bytes,depot_ids,type,is_installed" +
+        String sql = "SELECT app_id,name,install_dir,icon_hash,size_bytes,depot_ids,type," +
+                     "is_installed,developer,metacritic_score,genres" +
                      " FROM steam_games" +
                      (where != null ? " WHERE " + where : "") +
                      " ORDER BY name COLLATE NOCASE";
@@ -283,7 +301,10 @@ public final class SteamDatabase extends SQLiteOpenHelper {
                         c.getLong(4),
                         c.getString(5),
                         c.getString(6),
-                        c.getInt(7) != 0));
+                        c.getInt(7) != 0,
+                        c.getString(8),
+                        c.getInt(9),
+                        c.getString(10)));
             }
         }
         return result;

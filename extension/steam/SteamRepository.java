@@ -457,10 +457,35 @@ public final class SteamRepository {
                         // Empty type means PICS didn't return common section — skip
                         if (type.isEmpty()) continue;
 
-                        String name      = kvStr(common.get("name"));
-                        String icon      = kvStr(common.get("icon"));
+                        String name       = kvStr(common.get("name"));
+                        String icon       = kvStr(common.get("icon"));
                         String clientIcon = kvStr(common.get("clienticon"));
                         if (icon.isEmpty()) icon = clientIcon;
+
+                        // Developer
+                        String developer = kvStr(common.get("developer"));
+
+                        // Metacritic score (0-100, 0 means not available)
+                        int metacriticScore = 0;
+                        String metaStr = kvStr(common.get("metacritic").get("score"));
+                        if (!metaStr.isEmpty()) {
+                            try { metacriticScore = Integer.parseInt(metaStr); }
+                            catch (NumberFormatException ignored) {}
+                        }
+
+                        // Genres — children keyed "0","1",... each with a "description" subkey
+                        StringBuilder genreSb = new StringBuilder();
+                        List<KeyValue> genreChildren = common.get("genres").getChildren();
+                        if (genreChildren != null) {
+                            for (KeyValue g : genreChildren) {
+                                String gname = kvStr(g.get("description"));
+                                if (gname.isEmpty()) gname = kvStr(g);
+                                if (!gname.isEmpty()) {
+                                    if (genreSb.length() > 0) genreSb.append(", ");
+                                    genreSb.append(gname);
+                                }
+                            }
+                        }
 
                         // Collect depot IDs, manifest IDs, and sizes from the "depots" section
                         StringBuilder depotSb = new StringBuilder();
@@ -495,7 +520,8 @@ public final class SteamRepository {
                             }
                         }
 
-                        db.upsertGame(app.getId(), name, icon, totalSize, depotSb.toString(), type);
+                        db.upsertGame(app.getId(), name, icon, totalSize, depotSb.toString(), type,
+                                developer, metacriticScore, genreSb.toString());
                         count++;
                     } catch (Exception e) {
                         Log.w(TAG, "Skipping app " + app.getId() + ": " + e.getMessage());

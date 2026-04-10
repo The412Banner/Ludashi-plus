@@ -30,6 +30,15 @@ data class SteamGame(
 
     /** True if the game has been fully downloaded (marker file present). */
     val isInstalled: Boolean = false,
+
+    /** Developer name from PICS common.developer. Empty if not available. */
+    val developer: String = "",
+
+    /** Metacritic score 0-100 from PICS common.metacritic.score. 0 = not rated. */
+    val metacriticScore: Int = 0,
+
+    /** Comma-separated genre names from PICS common.genres. Empty if not available. */
+    val genres: String = "",
 ) {
     /** Store header image URL — available for all apps, no hash needed. */
     val headerUrl: String
@@ -47,14 +56,17 @@ data class SteamGame(
             val depotIds = if (row.depotIds.isBlank()) emptyList()
                 else row.depotIds.split(",").mapNotNull { it.trim().toIntOrNull() }
             return SteamGame(
-                appId      = row.appId,
-                name       = row.name,
-                installDir = row.installDir,
-                iconHash   = row.iconHash,
-                sizeBytes  = row.sizeBytes,
-                depotIds   = depotIds,
-                type       = row.type,
-                isInstalled = row.isInstalled,
+                appId          = row.appId,
+                name           = row.name,
+                installDir     = row.installDir,
+                iconHash       = row.iconHash,
+                sizeBytes      = row.sizeBytes,
+                depotIds       = depotIds,
+                type           = row.type,
+                isInstalled    = row.isInstalled,
+                developer      = row.developer,
+                metacriticScore = row.metacriticScore,
+                genres         = row.genres,
             )
         }
     }

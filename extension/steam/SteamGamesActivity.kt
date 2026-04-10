@@ -117,14 +117,37 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
                 // Tag the row with appId so the async image loader can detect recycling
                 row.tag = game.appId
 
-                val artView  = row.getChildAt(0) as ImageView
-                val infoView = row.getChildAt(1) as LinearLayout
-                val nameView = infoView.getChildAt(0) as TextView
-                val sizeView = infoView.getChildAt(1) as TextView
+                val artView      = row.getChildAt(0) as ImageView
+                val infoView     = row.getChildAt(1) as LinearLayout
+                val nameView     = infoView.getChildAt(0) as TextView
+                val developerView = infoView.getChildAt(1) as TextView
+                val genresView   = infoView.getChildAt(2) as TextView
+                val sizeView     = infoView.getChildAt(3) as TextView
+                val metaView     = infoView.getChildAt(4) as TextView
 
                 nameView.text = game.name.ifEmpty { "App ${game.appId}" }
+
+                developerView.text = game.developer
+                developerView.visibility = if (game.developer.isNotEmpty()) View.VISIBLE else View.GONE
+
+                genresView.text = game.genres
+                genresView.visibility = if (game.genres.isNotEmpty()) View.VISIBLE else View.GONE
+
                 val mb = game.sizeBytes / (1024L * 1024L)
                 sizeView.text = if (mb > 0) "${mb} MB" else ""
+                sizeView.visibility = if (mb > 0) View.VISIBLE else View.GONE
+
+                if (game.metacriticScore > 0) {
+                    metaView.text = "Metacritic: ${game.metacriticScore}"
+                    metaView.setTextColor(when {
+                        game.metacriticScore >= 75 -> 0xFF4CAF50.toInt()  // green
+                        game.metacriticScore >= 50 -> 0xFFFFC107.toInt()  // amber
+                        else                       -> 0xFFF44336.toInt()  // red
+                    })
+                    metaView.visibility = View.VISIBLE
+                } else {
+                    metaView.visibility = View.GONE
+                }
 
                 // Reset art to placeholder then kick off async load
                 artView.setImageResource(android.R.color.darker_gray)
@@ -202,14 +225,17 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         val refreshBtn = Button(this).apply {
-            text = "↻"
-            setTextColor(BLUE)
-            setBackgroundColor(Color.TRANSPARENT)
+            text = "Refresh"
+            textSize = 13f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(BLUE)
+            setPadding(dp(12), 0, dp(12), 0)
             setOnClickListener { SteamRepository.getInstance().syncLibrary() }
         }
         header.addView(backBtn)
         header.addView(title)
-        header.addView(refreshBtn)
+        header.addView(refreshBtn, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)))
         root.addView(header)
 
         // Status bar
@@ -224,7 +250,7 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
 
         // Empty state
         emptyText = TextView(this).apply {
-            text = "No games found.\nIf sync just finished, tap ↻ to refresh."
+            text = "No games found.\nIf sync just finished, tap Refresh."
             textSize = 14f
             setTextColor(GRAY)
             gravity = Gravity.CENTER
@@ -251,7 +277,7 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
         return root
     }
 
-    /** Build a card row: [portrait art | game name + size] */
+    /** Build a card row: [portrait art | name / developer / genres / size / metacritic] */
     private fun buildRow(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         setBackgroundColor(CARD_BG)
@@ -259,37 +285,55 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
 
         // Portrait art thumbnail (approx 2:3 ratio)
         val artWidth  = dp(80)
-        val artHeight = dp(120)
+        val artHeight = dp(140)
         val artView = ImageView(this@SteamGamesActivity).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             setBackgroundColor(Color.parseColor("#2A2A2A"))
         }
         addView(artView, LinearLayout.LayoutParams(artWidth, artHeight))
 
-        // Right side: name + size
+        // Right side: name + metadata stack
         val infoLayout = LinearLayout(this@SteamGamesActivity).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(12), dp(8), dp(8), dp(8))
         }
+
+        fun smallText() = TextView(this@SteamGamesActivity).apply {
+            textSize = 11f
+            setTextColor(GRAY)
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(0, dp(2), 0, 0)
+        }
+
+        // child 0: game name
         val nameView = TextView(this@SteamGamesActivity).apply {
             textSize = 14f
             setTextColor(Color.WHITE)
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
         }
-        val sizeView = TextView(this@SteamGamesActivity).apply {
-            textSize = 11f
-            setTextColor(GRAY)
-            setPadding(0, dp(4), 0, 0)
-        }
-        infoLayout.addView(nameView, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        infoLayout.addView(sizeView, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        // child 1: developer
+        val developerView = smallText()
+        // child 2: genres
+        val genresView = smallText()
+        // child 3: install size
+        val sizeView = smallText()
+        // child 4: metacritic score (color set dynamically)
+        val metaView = smallText()
+
+        val wrapLp = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        infoLayout.addView(nameView,      wrapLp)
+        infoLayout.addView(developerView, wrapLp)
+        infoLayout.addView(genresView,    wrapLp)
+        infoLayout.addView(sizeView,      wrapLp)
+        infoLayout.addView(metaView,      wrapLp)
+
         addView(infoLayout, LinearLayout.LayoutParams(0, artHeight, 1f))
 
-        // Bottom divider
+        // Row bottom margin (acts as divider)
         layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
