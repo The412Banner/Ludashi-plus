@@ -409,6 +409,26 @@ public final class SteamRepository {
         return v != null ? v : "";
     }
 
+    /** Map Steam PICS flat genre IDs (numeric strings) to human-readable names. */
+    private static String resolveGenreId(String id) {
+        switch (id) {
+            case "1":  return "Action";
+            case "2":  return "Strategy";
+            case "3":  return "RPG";
+            case "4":  return "Casual";
+            case "5":  return "Racing";
+            case "6":  return "Sports";
+            case "7":  return "Simulation";
+            case "8":  return "Adventure";
+            case "9":  return "Racing";
+            case "18": return "Massively Multiplayer";
+            case "23": return "Indie";
+            case "25": return "Shooter";
+            case "37": return "Free to Play";
+            default:   return "";  // unknown IDs are hidden rather than shown as numbers
+        }
+    }
+
     /** Phase 4 step 3: handle PICS product info callbacks for packages and apps. */
     private void onPICSProductInfo(PICSProductInfoCallback cb) {
         if (syncPhase == SYNC_PACKAGES) {
@@ -473,13 +493,14 @@ public final class SteamRepository {
                             catch (NumberFormatException ignored) {}
                         }
 
-                        // Genres — children keyed "0","1",... each with a "description" subkey
+                        // Genres — children keyed "0","1",... each with a "description" subkey.
+                        // When description is absent, the value is a raw numeric genre ID — resolve it.
                         StringBuilder genreSb = new StringBuilder();
                         List<KeyValue> genreChildren = common.get("genres").getChildren();
                         if (genreChildren != null) {
                             for (KeyValue g : genreChildren) {
                                 String gname = kvStr(g.get("description"));
-                                if (gname.isEmpty()) gname = kvStr(g);
+                                if (gname.isEmpty()) gname = resolveGenreId(kvStr(g));
                                 if (!gname.isEmpty()) {
                                     if (genreSb.length() > 0) genreSb.append(", ");
                                     genreSb.append(gname);
