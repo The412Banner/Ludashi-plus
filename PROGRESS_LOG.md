@@ -786,3 +786,49 @@ Rather than continuing to debug the auth chain manually (CDN tokens + manifest c
 - `gather_jar` now uses `version="MULTI"` for okhttp/okhttp-coroutines
 - Multi-version loop tries `5.0.0` → `5.0.0-alpha.14` → `5.0.0-alpha.11` → `4.12.0` in order, validates each with `jar tf` before accepting
 - Single-version downloads also now validated with `jar tf` before accepting
+
+### Post-CI update — 2026-04-10 — compat shim series complete
+
+| Commit | Tag | Description | CI Run | Result |
+|---|---|---|---|---|
+| `1d2a5f8` | v1.0.1-steam-pre1 | feat: okhttp-coroutines compat shim + SteamGamesActivity restart fix | CI | ❌ okhttp.jar invalid (HTML 404) |
+| `2419690` | v1.0.1-steam-pre1 | fix: multi-version OkHttp Maven fallback + JAR validation | CI | ❌ okhttp-jvm not matched by okhttp-[0-9]* pattern |
+| `a81b303` | v1.0.1-steam-pre1 | fix: detect okhttp3 in javasteam.jar; group path cache search | CI | ❌ kotlinc IR optimizer crash on CancellableContinuation |
+| `ae532ca` | v1.0.1-steam-pre1 | fix: suspendCoroutine shim + okhttp-jvm artifact name | CI | ✅ **success** |
+
+**Lessons from okhttp chain:**
+- OkHttp 5.x uses `okhttp-jvm` artifact (KMP naming), not `okhttp`
+- `okhttp-jvm-5.1.0.jar` is in Gradle cache at `com.squareup.okhttp3/okhttp-jvm/5.1.0/`
+- kotlinc 1.9 IR optimizer crashes when `-Xskip-metadata-version-check` is active and code calls `CancellableContinuation.resumeWith(Result.success(...))` — IR const-expr transformer hits AssertionError
+- Fix: use `suspendCoroutine` (stdlib) → plain `Continuation<T>` → no coroutines library version dependency, no IR issue
+
+**Current APK state (as of ae532ca — 2026-04-10):**
+- Tag: `v1.0.1-steam-pre1`
+- okhttp-coroutines compat shim in place, okhttp-jvm 5.1.0 bundled in DepotDownloader DEX
+- SteamGamesActivity handles uninit restart gracefully
+- Ready for download test
+
+### Crash analysis — log_2026_04_10_14_09_55 (OLD APK — pre-compat shim)
+- Timestamps 14:09 confirm this is the `185e11b` APK — `ae532ca` (compat shim) wasn't built until 16:40
+- Both crashes: `ClassNotFoundException: okhttp3.coroutines.ExecuteAsyncKt` — expected, the shim wasn't in `185e11b`
+- User needs to install the `ae532ca` APK from `v1.0.1-steam-pre1` release
+
+### Notes from Steam Integration Report (GameNative reference)
+From section 5.3 / 2.2:
+- GameNative passes `OkHttpClient` to `SteamConfiguration.withHttpClient(...)` — we currently do not; may need this if CM connection uses HTTP for certain operations
+- `getCompletion().await()` used by GameNative (coroutine, non-blocking) vs our `.get()` (blocking on IO thread) — functionally fine on IO thread but could adopt await() later
+- `CaseInsensitiveFileSystem()` passed to DepotDownloader — GameNative uses this for Windows game file compatibility; we don't pass it currently → could cause issues if game has mixed-case file references
+- GameNative uses `ProtocolTypes.WEB_SOCKET` for CM connection; we use TCP — not related to download but worth noting
+- These improvements are queued for after basic download is confirmed working
+
+### Crash analysis — log_2026_04_10_14_30_10 (ae532ca APK or still 185e11b?)
+- **Same error:** `NoClassDefFoundError: Failed resolution of: Lokhttp3/coroutines/ExecuteAsyncKt;`
+- Root cause FOUND: the compat shim file is named `ExecuteAsyncKt.kt` → Kotlin adds `Kt` suffix → generated class is `okhttp3.coroutines.ExecuteAsyncKtKt` not `ExecuteAsyncKt`
+- Runtime lookup for `okhttp3.coroutines.ExecuteAsyncKt` fails — wrong class name in DEX
+- Fix: add `@file:JvmName("ExecuteAsyncKt")` at top of `ExecuteAsyncKt.kt` to override generated class name
+
+### Pre-push — fix: @file:JvmName("ExecuteAsyncKt") compat shim class name (2026-04-10)
+- Files: `extension/steam/compat/ExecuteAsyncKt.kt`
+- Tag: v1.0.1-steam-pre1 (retag after push)
+- Expected: classes22.dex now contains `okhttp3/coroutines/ExecuteAsyncKt` (not `ExecuteAsyncKtKt`)
+- CI pending
