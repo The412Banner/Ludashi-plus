@@ -32,6 +32,14 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
 
         SteamRepository.getInstance().addListener(this)
         loadGames()
+
+        // If we're already logged in but the DB is empty (e.g. the sync event fired
+        // before this Activity opened), kick off a re-sync immediately.
+        val repo = SteamRepository.getInstance()
+        if (games.isEmpty() && repo.isLoggedIn) {
+            statusText.text = "Syncing library…"
+            repo.syncLibrary()
+        }
     }
 
     override fun onDestroy() {
@@ -63,8 +71,21 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
                     loadGames()
                 }
             }
-            event == "LoggedOut" || event == "Disconnected" -> {
+            event == "LoggedOut" -> {
                 ui.post { finish() }
+            }
+            event == "Disconnected" -> {
+                // Transient disconnect — SteamRepository will auto-reconnect.
+                // Don't close the activity; just update status so the user knows.
+                ui.post { statusText.text = "Disconnected — reconnecting…" }
+            }
+            event == "Connected" -> {
+                // After reconnect, if DB still empty and now logged in, retry sync.
+                val repo = SteamRepository.getInstance()
+                if (games.isEmpty() && repo.isLoggedIn) {
+                    ui.post { statusText.text = "Reconnected — syncing library…" }
+                    repo.syncLibrary()
+                }
             }
         }
     }

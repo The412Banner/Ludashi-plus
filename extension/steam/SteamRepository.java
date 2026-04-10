@@ -403,6 +403,12 @@ public final class SteamRepository {
         steamApps.picsGetProductInfo(appRequests, Collections.emptyList(), false);
     }
 
+    /** Null-safe asString(): returns "" instead of null when a KeyValue has no value. */
+    private static String kvStr(KeyValue kv) {
+        String v = kv.asString();
+        return v != null ? v : "";
+    }
+
     /** Phase 4 step 3: handle PICS product info callbacks for packages and apps. */
     private void onPICSProductInfo(PICSProductInfoCallback cb) {
         if (syncPhase == SYNC_PACKAGES) {
@@ -417,7 +423,9 @@ public final class SteamRepository {
                     if (children != null) {
                         for (KeyValue child : children) {
                             try {
-                                int appId = Integer.parseInt(child.getValue());
+                                String raw = child.getValue();
+                                if (raw == null || raw.isEmpty()) continue;
+                                int appId = Integer.parseInt(raw);
                                 if (!appIds.contains(appId)) appIds.add(appId);
                                 db.linkLicenseApp(pkg.getId(), appId);
                             } catch (NumberFormatException ignored) {}
@@ -436,55 +444,67 @@ public final class SteamRepository {
                 SteamDatabase db = SteamDatabase.getInstance();
                 int count = 0;
                 for (PICSProductInfo app : pendingApps.values()) {
-                    KeyValue common = app.getKeyValues().get("common");
-                    String type = common.get("type").asString().toLowerCase();
-                    if (!"game".equals(type) && !"dlc".equals(type)) continue;
+                    try {
+                        KeyValue root = app.getKeyValues();
+                        KeyValue common = root.get("common");
+                        // "type" is absent on some entries (tools, hardware, etc.) — skip those
+                        String type = kvStr(common.get("type")).toLowerCase();
+                        // Skip non-playable app types
+                        if ("tool".equals(type) || "hardware".equals(type)
+                                || "music".equals(type) || "video".equals(type)
+                                || "advertising".equals(type)) continue;
+                        // Accept "game", "dlc", "application", "demo", "beta", ""
+                        // Empty type means PICS didn't return common section — skip
+                        if (type.isEmpty()) continue;
 
-                    String name     = common.get("name").asString();
-                    String icon     = common.get("icon").asString();
-                    String clientIcon = common.get("clienticon").asString();
-                    if (icon.isEmpty()) icon = clientIcon;
+                        String name      = kvStr(common.get("name"));
+                        String icon      = kvStr(common.get("icon"));
+                        String clientIcon = kvStr(common.get("clienticon"));
+                        if (icon.isEmpty()) icon = clientIcon;
 
-                    // Collect depot IDs, manifest IDs, and sizes from the "depots" section
-                    StringBuilder depotSb = new StringBuilder();
-                    long totalSize = 0L;
-                    KeyValue depotsKv = app.getKeyValues().get("depots");
-                    List<KeyValue> depotChildren = depotsKv.getChildren();
-                    if (depotChildren != null) {
-                        for (KeyValue d : depotChildren) {
-                            int depotId;
-                            try { depotId = Integer.parseInt(d.getName()); }
-                            catch (NumberFormatException ignored) { continue; }
-                            if (depotSb.length() > 0) depotSb.append(',');
-                            depotSb.append(depotId);
-                            // Extract manifest GID from depots/{id}/manifests/public/gid
-                            String manifestGid = d.get("manifests").get("public").get("gid").asString();
-                            if (manifestGid.isEmpty()) {
-                                // Some depots use "manifest" directly (older format)
-                                manifestGid = d.get("manifest").asString();
-                            }
-                            long depotSize = 0L;
-                            String maxSize = d.get("maxsize").asString();
-                            if (!maxSize.isEmpty()) {
-                                try { depotSize = Long.parseLong(maxSize); totalSize += depotSize; }
-                                catch (NumberFormatException ignored) {}
-                            }
-                            if (!manifestGid.isEmpty()) {
-                                try {
-                                    long manifestId = Long.parseLong(manifestGid);
-                                    db.upsertDepotManifest(app.getId(), depotId, manifestId, depotSize);
-                                } catch (NumberFormatException ignored) {}
+                        // Collect depot IDs, manifest IDs, and sizes from the "depots" section
+                        StringBuilder depotSb = new StringBuilder();
+                        long totalSize = 0L;
+                        KeyValue depotsKv = root.get("depots");
+                        List<KeyValue> depotChildren = depotsKv.getChildren();
+                        if (depotChildren != null) {
+                            for (KeyValue d : depotChildren) {
+                                int depotId;
+                                try { depotId = Integer.parseInt(d.getName()); }
+                                catch (NumberFormatException ignored) { continue; }
+                                if (depotSb.length() > 0) depotSb.append(',');
+                                depotSb.append(depotId);
+                                // Extract manifest GID from depots/{id}/manifests/public/gid
+                                String manifestGid = kvStr(d.get("manifests").get("public").get("gid"));
+                                if (manifestGid.isEmpty()) {
+                                    // Some depots use "manifest" directly (older format)
+                                    manifestGid = kvStr(d.get("manifest"));
+                                }
+                                String maxSize = kvStr(d.get("maxsize"));
+                                long depotSize = 0L;
+                                if (!maxSize.isEmpty()) {
+                                    try { depotSize = Long.parseLong(maxSize); totalSize += depotSize; }
+                                    catch (NumberFormatException ignored) {}
+                                }
+                                if (!manifestGid.isEmpty()) {
+                                    try {
+                                        long manifestId = Long.parseLong(manifestGid);
+                                        db.upsertDepotManifest(app.getId(), depotId, manifestId, depotSize);
+                                    } catch (NumberFormatException ignored) {}
+                                }
                             }
                         }
-                    }
 
-                    db.upsertGame(app.getId(), name, icon, totalSize, depotSb.toString(), type);
-                    count++;
+                        db.upsertGame(app.getId(), name, icon, totalSize, depotSb.toString(), type);
+                        count++;
+                    } catch (Exception e) {
+                        Log.w(TAG, "Skipping app " + app.getId() + ": " + e.getMessage());
+                    }
                 }
                 syncPhase = SYNC_IDLE;
                 pendingPackages.clear();
                 pendingApps.clear();
-                Log.i(TAG, "Library sync complete: " + count + " games/DLC");
+                Log.i(TAG, "Library sync complete: " + count + " apps");
                 emit("LibrarySynced:" + count);
             }
         }
