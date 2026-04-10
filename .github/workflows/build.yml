@@ -162,6 +162,11 @@ jobs:
           echo "Using JAR: $MAIN_JAR ($(du -sh "$MAIN_JAR" | cut -f1))"
           jar tf "$MAIN_JAR" | grep -E "SteamClient|EResult|ProtocolTypes" | head -5 || true
 
+          echo "=== SteamApps handler classes ==="
+          jar tf "$MAIN_JAR" | grep -i "steamapps" | sort || true
+          echo "=== All callback classes ==="
+          jar tf "$MAIN_JAR" | grep -i "callback" | sort || true
+
           cp "$MAIN_JAR" ../javasteam.jar
 
           # Grab the exact protobuf-java JAR that Gradle resolved for JavaSteam.

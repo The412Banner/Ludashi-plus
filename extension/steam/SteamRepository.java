@@ -22,10 +22,8 @@ import in.dragonbra.javasteam.steam.handlers.steamapps.License;
 import in.dragonbra.javasteam.steam.handlers.steamapps.PICSProductInfo;
 import in.dragonbra.javasteam.steam.handlers.steamapps.PICSRequest;
 import in.dragonbra.javasteam.steam.handlers.steamapps.SteamApps;
-import in.dragonbra.javasteam.steam.handlers.steamapps.callback.CDNAuthTokenCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.DepotKeyCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.LicenseListCallback;
-import in.dragonbra.javasteam.steam.handlers.steamapps.callback.ManifestRequestCodeCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.PICSProductInfoCallback;
 import in.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends;
 import in.dragonbra.javasteam.types.KeyValue;
@@ -160,8 +158,8 @@ public final class SteamRepository {
     }
 
     public void requestManifestCode(int appId, int depotId, long manifestId) {
-        if (steamApps == null) return;
-        steamApps.getManifestRequestCode(depotId, appId, manifestId, "public");
+        // TODO: call correct JavaSteam method once class names confirmed from JAR dump
+        // steamApps.getManifestRequestCode(depotId, appId, manifestId, "public");
     }
 
     // -------------------------------------------------------------------------
@@ -177,8 +175,8 @@ public final class SteamRepository {
     }
 
     public void requestCdnAuthToken(int appId, int depotId, String cdnHost) {
-        if (steamApps == null) return;
-        steamApps.getCDNAuthToken(appId, depotId, cdnHost);
+        // TODO: call correct JavaSteam method once class names confirmed from JAR dump
+        // steamApps.getCDNAuthToken(appId, depotId, cdnHost);
     }
 
     // -------------------------------------------------------------------------
@@ -234,11 +232,12 @@ public final class SteamRepository {
         manager.subscribe(DisconnectedCallback.class,   this::onDisconnected);
         manager.subscribe(LoggedOnCallback.class,       this::onLoggedOn);
         manager.subscribe(LoggedOffCallback.class,      this::onLoggedOff);
-        manager.subscribe(LicenseListCallback.class,         this::onLicenseList);
-        manager.subscribe(PICSProductInfoCallback.class,     this::onPICSProductInfo);
-        manager.subscribe(DepotKeyCallback.class,            this::onDepotKey);
-        manager.subscribe(ManifestRequestCodeCallback.class, this::onManifestRequestCode);
-        manager.subscribe(CDNAuthTokenCallback.class,        this::onCdnAuthToken);
+        manager.subscribe(LicenseListCallback.class,     this::onLicenseList);
+        manager.subscribe(PICSProductInfoCallback.class, this::onPICSProductInfo);
+        manager.subscribe(DepotKeyCallback.class,        this::onDepotKey);
+        // CDN auth callbacks registered once correct class names are confirmed from JAR
+        // manager.subscribe(ManifestRequestCodeCallback.class, this::onManifestRequestCode);
+        // manager.subscribe(CDNAuthTokenCallback.class,        this::onCdnAuthToken);
     }
 
     // -------------------------------------------------------------------------
@@ -610,28 +609,8 @@ public final class SteamRepository {
         }
     }
 
-    /** Handle manifest request code callback. Required to authenticate CDN manifest downloads. */
-    private void onManifestRequestCode(ManifestRequestCodeCallback cb) {
-        long code = cb.getManifestRequestCode();
-        if (code != 0L) {
-            manifestCodes.put(cb.getDepotID() + ":" + cb.getManifestID(), code);
-            Log.i(TAG, "Manifest code received for depot " + cb.getDepotID()
-                    + " manifest " + cb.getManifestID() + " code=" + code);
-        } else {
-            Log.w(TAG, "Manifest request code = 0 for depot " + cb.getDepotID());
-        }
-    }
-
-    /** Handle CDN auth token callback. Required to authenticate chunk downloads per CDN host. */
-    private void onCdnAuthToken(CDNAuthTokenCallback cb) {
-        if (cb.getResult() == EResult.OK) {
-            cdnTokens.put(cb.getHostName(), cb.getToken());
-            Log.i(TAG, "CDN auth token received for host " + cb.getHostName());
-        } else {
-            Log.w(TAG, "CDN auth token failed for host " + cb.getHostName()
-                    + ": " + cb.getResult());
-        }
-    }
+    // Callback handlers for manifest codes and CDN tokens will be wired in once
+    // the correct JavaSteam class names are confirmed from the JAR dump in CI.
 
     /** Trigger a full library re-sync (e.g. from pull-to-refresh). Safe to call from any thread. */
     public void syncLibrary() {
