@@ -704,6 +704,7 @@ public final class SteamRepository {
     public String getRefreshToken()  { return pGet("refresh_token", ""); }
     public String getAccessToken()   { return pGet("refresh_token", ""); } // refresh token doubles as bearer
     public long   getSteamId64()    { return pGet("steam_id_64", 0L); }
+    public SteamClient getSteamClient() { return steamClient; }
     public int    getAccountId()    { return pGet("account_id", 0); }
     public String getDisplayName()  { return pGet("display_name", ""); }
     public void   setDisplayName(String name) { pPut("display_name", name); }

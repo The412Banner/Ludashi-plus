@@ -268,8 +268,79 @@ jobs:
           fi
           cp -r kotlin_spilling_extract ../kotlin_spilling_extract
 
+          # ---------------------------------------------------------------
+          # DepotDownloader: copy its JAR + gather transitive deps from cache
+          # so we can bundle them as a separate DEX and use them in Kotlin.
+          # ---------------------------------------------------------------
+          DD_JAR=$(find . -name "javasteam-depotdownloader-*.jar" -path "*/build/libs/*" \
+            ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | head -1)
+          if [ -n "$DD_JAR" ]; then
+            echo "Found depotdownloader JAR: $DD_JAR ($(du -sh "$DD_JAR" | cut -f1))"
+            cp "$DD_JAR" ../javasteam-depotdownloader.jar
+          else
+            echo "ERROR: javasteam-depotdownloader JAR not found — DepotDownloader unavailable"
+            touch ../javasteam-depotdownloader.jar  # empty placeholder so CI doesn't fail
+          fi
+
+          # Gather Ktor CIO, Okio, kotlinx-serialization JARs from Gradle cache.
+          # These are transitive deps of javasteam-depotdownloader.
+          echo "=== Gathering DepotDownloader transitive deps from Gradle cache ==="
+          GRADLE_CACHE=~/.gradle/caches/modules-2/files-2.1
+
+          gather_jar() {
+            local pattern="$1"
+            local dest="$2"
+            local found
+            found=$(find "$GRADLE_CACHE" -name "$pattern" \
+              ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | sort -V | tail -1)
+            if [ -n "$found" ]; then
+              echo "  ✓ $pattern → $(du -sh "$found" | cut -f1)"
+              cp "$found" "$dest"
+            else
+              echo "  ✗ $pattern NOT FOUND — downloading from Maven Central"
+              # Best-effort Maven download for missing JARs
+              local group_path artifact version
+              case "$pattern" in
+                ktor-client-cio-jvm-*)  group_path="io/ktor"; artifact="ktor-client-cio-jvm"; version="3.2.2" ;;
+                ktor-client-core-jvm-*) group_path="io/ktor"; artifact="ktor-client-core-jvm"; version="3.2.2" ;;
+                ktor-io-jvm-*)          group_path="io/ktor"; artifact="ktor-io-jvm"; version="3.2.2" ;;
+                ktor-http-jvm-*)        group_path="io/ktor"; artifact="ktor-http-jvm"; version="3.2.2" ;;
+                ktor-utils-jvm-*)       group_path="io/ktor"; artifact="ktor-utils-jvm"; version="3.2.2" ;;
+                ktor-network-jvm-*)     group_path="io/ktor"; artifact="ktor-network-jvm"; version="3.2.2" ;;
+                ktor-network-tls-jvm-*) group_path="io/ktor"; artifact="ktor-network-tls-jvm"; version="3.2.2" ;;
+                okio-jvm-*)             group_path="com/squareup/okio"; artifact="okio-jvm"; version="3.16.0" ;;
+                kotlinx-io-core-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-io-core-jvm"; version="0.7.0" ;;
+                kotlinx-serialization-json-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-serialization-json-jvm"; version="1.9.0" ;;
+                kotlinx-serialization-core-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-serialization-core-jvm"; version="1.9.0" ;;
+                *) group_path=""; artifact=""; version="" ;;
+              esac
+              if [ -n "$artifact" ]; then
+                wget -q "https://repo1.maven.org/maven2/${group_path}/${artifact}/${version}/${artifact}-${version}.jar" \
+                  -O "$dest" && echo "  ✓ downloaded $artifact-$version" || { echo "  ✗ download failed for $artifact"; touch "$dest"; }
+              else
+                touch "$dest"
+              fi
+            fi
+          }
+
+          mkdir -p ../depot_deps
+          gather_jar "ktor-client-cio-jvm-*.jar"               "../depot_deps/ktor-client-cio.jar"
+          gather_jar "ktor-client-core-jvm-*.jar"              "../depot_deps/ktor-client-core.jar"
+          gather_jar "ktor-io-jvm-*.jar"                       "../depot_deps/ktor-io.jar"
+          gather_jar "ktor-http-jvm-*.jar"                     "../depot_deps/ktor-http.jar"
+          gather_jar "ktor-utils-jvm-*.jar"                    "../depot_deps/ktor-utils.jar"
+          gather_jar "ktor-network-jvm-*.jar"                  "../depot_deps/ktor-network.jar"
+          gather_jar "ktor-network-tls-jvm-*.jar"              "../depot_deps/ktor-network-tls.jar"
+          gather_jar "okio-jvm-*.jar"                          "../depot_deps/okio.jar"
+          gather_jar "kotlinx-io-core-jvm-*.jar"               "../depot_deps/kotlinx-io-core.jar"
+          gather_jar "kotlinx-serialization-json-jvm-*.jar"    "../depot_deps/kotlinx-serialization-json.jar"
+          gather_jar "kotlinx-serialization-core-jvm-*.jar"    "../depot_deps/kotlinx-serialization-core.jar"
+
+          echo "=== DepotDownloader deps gathered ==="
+          ls -lh ../javasteam-depotdownloader.jar ../depot_deps/
+
           cd ..
-          ls -lh javasteam.jar protobuf-java.jar
+          ls -lh javasteam.jar protobuf-java.jar javasteam-depotdownloader.jar
 
       - name: Decode base APK with apktool
         run: |
@@ -329,7 +400,7 @@ jobs:
           # Both sets share android.jar.
           mkdir -p ext_java_classes
           javac -source 8 -target 8 \
-            -cp "$ANDROID_JAR:org-json.jar:javasteam.jar:protobuf-java.jar:zxing-core.jar:commons-lang3.jar" \
+            -cp "$ANDROID_JAR:org-json.jar:javasteam.jar:javasteam-depotdownloader.jar:protobuf-java.jar:zxing-core.jar:commons-lang3.jar" \
             -d ext_java_classes \
             extension/*.java extension/steam/*.java
           echo "Compiled $(find ext_java_classes -name '*.class' | wc -l) Java class files"
@@ -360,6 +431,42 @@ jobs:
           echo "JavaSteam DEX output:"
           ls -lh ext_steam_lib_dex/
 
+      - name: Bundle DepotDownloader → DEX
+        run: |
+          BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | sort -V | tail -1)
+          mkdir -p ext_depot_dex
+
+          # Build list of JARs to bundle: depotdownloader + all gathered deps
+          DD_JARS="javasteam-depotdownloader.jar"
+          for dep in depot_deps/*.jar; do
+            # Skip empty placeholder JARs (size 0)
+            if [ -s "$dep" ]; then
+              DD_JARS="$DD_JARS $dep"
+            else
+              echo "Skipping empty: $dep"
+            fi
+          done
+
+          echo "=== DepotDownloader DEX input JARs ==="
+          for j in $DD_JARS; do echo "  $(du -sh "$j" | cut -f1)  $j"; done
+
+          # Strip Kotlin module metadata from all depotdownloader JARs
+          for j in $DD_JARS; do
+            zip -d "$j" 'META-INF/*.kotlin_module' 2>/dev/null || true
+          done
+
+          if [ -s "javasteam-depotdownloader.jar" ]; then
+            $ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS/d8 \
+              --release --min-api 26 --output ext_depot_dex \
+              $DD_JARS
+            echo "=== DepotDownloader DEX output ==="
+            ls -lh ext_depot_dex/
+          else
+            echo "javasteam-depotdownloader.jar is empty — skipping DEX bundling"
+            # Create a stub so the inject step doesn't fail
+            touch ext_depot_dex/.skip
+          fi
+
       - name: Compile Kotlin Steam extension → classes.dex (for classes19+)
         run: |
           ANDROID_JAR=$(ls $ANDROID_SDK_ROOT/platforms/android-*/android.jar 2>/dev/null \
@@ -376,6 +483,12 @@ jobs:
           echo "Compiling Kotlin files:"
           echo "$KT_FILES"
 
+          # Build depot deps classpath for kotlinc (all non-empty gathered JARs)
+          DEPOT_CP=""
+          for dep in depot_deps/*.jar javasteam-depotdownloader.jar; do
+            [ -s "$dep" ] && DEPOT_CP="$DEPOT_CP:$dep"
+          done
+
           # -no-stdlib: don't auto-include stdlib in the output (it's already in the base APK).
           # But we still need it on the COMPILATION classpath so built-in types resolve.
           # kotlin-stdlib.jar lives in $HOME/kotlinc/lib/ from the unzipped compiler distribution.
@@ -384,7 +497,7 @@ jobs:
           KOTLIN_STDLIB="$HOME/kotlinc/lib/kotlin-stdlib.jar"
           kotlinc \
             -no-stdlib \
-            -classpath "$ANDROID_JAR:javasteam.jar:$KOTLIN_STDLIB:ext_java_classes:zxing-core.jar" \
+            -classpath "$ANDROID_JAR:javasteam.jar:$KOTLIN_STDLIB:ext_java_classes:zxing-core.jar${DEPOT_CP}" \
             -d ext_kotlin_classes \
             $KT_FILES
           echo "Kotlin compilation done: $(find ext_kotlin_classes -name '*.class' | wc -l) class files"
@@ -450,6 +563,23 @@ jobs:
             echo "${TARGET_NAME} injected ($(du -sh "$TARGET_NAME" | cut -f1))"
             DEX_IDX=$((DEX_IDX + 1))
           done
+          echo "NEXT_DEX_IDX_AFTER_KT=$DEX_IDX" >> $GITHUB_ENV
+
+      - name: Inject DepotDownloader DEX
+        run: |
+          DEX_IDX=${{ env.NEXT_DEX_IDX_AFTER_KT }}
+          if ls ext_depot_dex/classes*.dex 2>/dev/null | head -1 | grep -q "."; then
+            for dex_file in $(ls ext_depot_dex/classes*.dex | sort); do
+              TARGET_NAME="classes${DEX_IDX}.dex"
+              cp "$dex_file" "$TARGET_NAME"
+              zip -j rebuilt-unsigned.apk "$TARGET_NAME"
+              echo "${TARGET_NAME} injected ($(du -sh "$TARGET_NAME" | cut -f1))"
+              DEX_IDX=$((DEX_IDX + 1))
+            done
+            echo "DepotDownloader DEX injection complete. Final DEX index: $DEX_IDX"
+          else
+            echo "No DepotDownloader DEX files found — skipping (depotdownloader JAR was empty)"
+          fi
 
       - name: Zipalign
         run: |

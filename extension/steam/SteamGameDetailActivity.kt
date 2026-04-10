@@ -88,7 +88,7 @@ class SteamGameDetailActivity : Activity(), SteamRepository.SteamEventListener {
                 val id = parts.getOrNull(1)?.toIntOrNull() ?: return
                 if (id != appId) return
                 val reason = parts.drop(2).joinToString(":")
-                val logPath = SteamDepotDownloader.getInstance().debugLogPath
+                val logPath = SteamDepotDownloader.debugLogPath
                 ui.post {
                     progressBar.visibility  = View.GONE
                     progressText.visibility = View.GONE
@@ -175,7 +175,7 @@ class SteamGameDetailActivity : Activity(), SteamRepository.SteamEventListener {
         } else {
             installBtn.isEnabled = false
             installBtn.text = "Starting…"
-            SteamDepotDownloader.getInstance().installApp(appId, applicationContext)
+            SteamDepotDownloader.installApp(appId, applicationContext)
         }
     }
 
