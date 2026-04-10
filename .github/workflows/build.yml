@@ -309,7 +309,7 @@ jobs:
                 ktor-network-jvm-*)     group_path="io/ktor"; artifact="ktor-network-jvm"; version="3.2.2" ;;
                 ktor-network-tls-jvm-*) group_path="io/ktor"; artifact="ktor-network-tls-jvm"; version="3.2.2" ;;
                 okio-jvm-*)             group_path="com/squareup/okio"; artifact="okio-jvm"; version="3.16.0" ;;
-                okhttp-[0-9]*)          group_path="com/squareup/okhttp3"; artifact="okhttp"; version="MULTI" ;;
+                okhttp-jvm-*)           group_path="com/squareup/okhttp3"; artifact="okhttp-jvm"; version="MULTI" ;;
                 okhttp-coroutines-*)    group_path="com/squareup/okhttp3"; artifact="okhttp-coroutines"; version="MULTI" ;;
                 kotlinx-io-core-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-io-core-jvm"; version="0.7.0" ;;
                 kotlinx-serialization-json-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-serialization-json-jvm"; version="1.9.0" ;;
@@ -324,7 +324,7 @@ jobs:
               elif [ "$version" = "MULTI" ]; then
                 # Try multiple versions in order until we get a valid JAR
                 local ok=0
-                for v in "5.0.0" "5.0.0-alpha.14" "5.0.0-alpha.11" "4.12.0"; do
+                for v in "5.1.0" "5.0.0" "5.0.0-alpha.14" "4.12.0"; do
                   wget -q "https://repo1.maven.org/maven2/${group_path}/${artifact}/${v}/${artifact}-${v}.jar" \
                     -O "$dest" 2>/dev/null && jar tf "$dest" > /dev/null 2>&1 && {
                     echo "  ✓ downloaded $artifact-$v"; ok=1; break
@@ -348,7 +348,8 @@ jobs:
           gather_jar "ktor-network-tls-jvm-*.jar"              "../depot_deps/ktor-network-tls.jar"
           gather_jar "okio-jvm-*.jar"                          "../depot_deps/okio.jar"
           # OkHttp3 + coroutines extension: javasteam CDN Client.kt uses okhttp3.coroutines.ExecuteAsyncKt
-          gather_jar "okhttp-[0-9]*.jar"                       "../depot_deps/okhttp.jar"
+          # OkHttp 5.x uses 'okhttp-jvm' artifact (Kotlin Multiplatform naming)
+          gather_jar "okhttp-jvm-*.jar"                         "../depot_deps/okhttp.jar"
           gather_jar "okhttp-coroutines-*.jar"                  "../depot_deps/okhttp-coroutines.jar"
           gather_jar "kotlinx-io-core-jvm-*.jar"               "../depot_deps/kotlinx-io-core.jar"
           gather_jar "kotlinx-serialization-json-jvm-*.jar"    "../depot_deps/kotlinx-serialization-json.jar"
