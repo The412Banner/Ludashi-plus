@@ -698,7 +698,10 @@ public final class SteamRepository {
 
     public SteamClient   getSteamClient() { return steamClient; }
     public SteamApps     getSteamApps()   { return steamApps; }
-    public SteamDatabase getDatabase()    { return SteamDatabase.getInstance(); }
+    public SteamDatabase getDatabase() {
+        if (appContext != null) return SteamDatabase.getInstance(appContext);
+        return SteamDatabase.getInstance();
+    }
 
     public String getUsername()     { return pGet("username", ""); }
     public String getRefreshToken()  { return pGet("refresh_token", ""); }

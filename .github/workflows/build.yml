@@ -309,6 +309,8 @@ jobs:
                 ktor-network-jvm-*)     group_path="io/ktor"; artifact="ktor-network-jvm"; version="3.2.2" ;;
                 ktor-network-tls-jvm-*) group_path="io/ktor"; artifact="ktor-network-tls-jvm"; version="3.2.2" ;;
                 okio-jvm-*)             group_path="com/squareup/okio"; artifact="okio-jvm"; version="3.16.0" ;;
+                okhttp-[0-9]*)          group_path="com/squareup/okhttp3"; artifact="okhttp"; version="5.0.0-alpha.14" ;;
+                okhttp-coroutines-*)    group_path="com/squareup/okhttp3"; artifact="okhttp-coroutines"; version="5.0.0-alpha.14" ;;
                 kotlinx-io-core-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-io-core-jvm"; version="0.7.0" ;;
                 kotlinx-serialization-json-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-serialization-json-jvm"; version="1.9.0" ;;
                 kotlinx-serialization-core-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-serialization-core-jvm"; version="1.9.0" ;;
@@ -332,6 +334,9 @@ jobs:
           gather_jar "ktor-network-jvm-*.jar"                  "../depot_deps/ktor-network.jar"
           gather_jar "ktor-network-tls-jvm-*.jar"              "../depot_deps/ktor-network-tls.jar"
           gather_jar "okio-jvm-*.jar"                          "../depot_deps/okio.jar"
+          # OkHttp3 + coroutines extension: javasteam CDN Client.kt uses okhttp3.coroutines.ExecuteAsyncKt
+          gather_jar "okhttp-[0-9]*.jar"                       "../depot_deps/okhttp.jar"
+          gather_jar "okhttp-coroutines-*.jar"                  "../depot_deps/okhttp-coroutines.jar"
           gather_jar "kotlinx-io-core-jvm-*.jar"               "../depot_deps/kotlinx-io-core.jar"
           gather_jar "kotlinx-serialization-json-jvm-*.jar"    "../depot_deps/kotlinx-serialization-json.jar"
           gather_jar "kotlinx-serialization-core-jvm-*.jar"    "../depot_deps/kotlinx-serialization-core.jar"
