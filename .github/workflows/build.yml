@@ -514,6 +514,34 @@ jobs:
             [ -s "$dep" ] && DEPOT_CP="$DEPOT_CP:$dep"
           done
 
+          # Debug: check if okhttp3 classes are inside javasteam.jar (fat/shadow JAR)
+          echo "=== OkHttp3 in javasteam.jar? ==="
+          jar tf javasteam.jar 2>/dev/null | grep "^okhttp3/" | head -3 || echo "(okhttp3 not in javasteam.jar)"
+          echo "=== OkHttp3 in Gradle cache ==="
+          find ~/.gradle -path "*okhttp3*" -name "*.jar" ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | head -5 || echo "(none)"
+
+          # okhttp3.Call/Callback/Response needed for compat shim compilation.
+          # javasteam.jar is already on the classpath — if it embeds okhttp3, nothing extra needed.
+          # Otherwise find okhttp in Gradle cache by group path (more reliable than filename glob).
+          OKHTTP_CP=""
+          if jar tf javasteam.jar 2>/dev/null | grep -q "^okhttp3/"; then
+            echo "okhttp3 embedded in javasteam.jar — no separate JAR needed for compilation"
+          else
+            OKHTTP_JAR=$(find ~/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp3/okhttp \
+              -name "*.jar" ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | sort -V | tail -1)
+            [ -z "$OKHTTP_JAR" ] && OKHTTP_JAR=$(find ~/.gradle -path "*com.squareup.okhttp3*" \
+              -name "okhttp-*.jar" ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | sort -V | tail -1)
+            if [ -n "$OKHTTP_JAR" ]; then
+              echo "okhttp3 found at: $OKHTTP_JAR"
+              OKHTTP_CP=":$OKHTTP_JAR"
+            elif [ -s "depot_deps/okhttp.jar" ]; then
+              echo "okhttp3 using depot_deps/okhttp.jar"
+              OKHTTP_CP=":depot_deps/okhttp.jar"
+            else
+              echo "WARNING: okhttp3 not found — compat shim compilation may fail"
+            fi
+          fi
+
           # kotlinx-coroutines-core is already bundled in the base APK so we don't DEX it,
           # but we need it on the COMPILATION classpath for SteamDepotDownloader.kt.
           COROUTINES_JAR=$(find ~/.gradle/caches -name "kotlinx-coroutines-core-jvm-*.jar" \
@@ -538,7 +566,7 @@ jobs:
           kotlinc \
             -no-stdlib \
             -Xskip-metadata-version-check \
-            -classpath "$ANDROID_JAR:javasteam.jar:$KOTLIN_STDLIB:ext_java_classes:zxing-core.jar${DEPOT_CP}${COROUTINES_CP}" \
+            -classpath "$ANDROID_JAR:javasteam.jar:$KOTLIN_STDLIB:ext_java_classes:zxing-core.jar${DEPOT_CP}${COROUTINES_CP}${OKHTTP_CP}" \
             -d ext_kotlin_classes \
             $KT_FILES
           echo "Kotlin compilation done: $(find ext_kotlin_classes -name '*.class' | wc -l) class files"
