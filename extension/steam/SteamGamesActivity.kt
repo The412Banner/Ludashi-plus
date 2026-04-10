@@ -101,7 +101,17 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
     // -------------------------------------------------------------------------
 
     private fun loadGames() {
-        val rows = SteamRepository.getInstance().database.allGames
+        val db = try {
+            SteamRepository.getInstance().database
+        } catch (e: IllegalStateException) {
+            // Process was restarted (e.g. after a crash) without going through
+            // SteamMainActivity — SteamRepository/SteamDatabase not initialised.
+            // Redirect to the entry point so the user can log back in.
+            startActivity(android.content.Intent(this, SteamMainActivity::class.java))
+            finish()
+            return
+        }
+        val rows = db.allGames
         games = rows
             .filter { it.type == "game" }
             .map { SteamGame.fromGameRow(it) }

@@ -705,3 +705,72 @@ Implement full depot download: manifest IDs from PICS, depot key fetching, CDN d
 - Only type="game" shown in library list
 - Status count from games.size (not sync event count)
 - Portrait cover art per row (async, LruCache)
+
+---
+
+## Session: 2026-04-10 — Steam Download Engine
+
+> **Log discipline:** update this file both before pushing a CI build (record what was changed and why) and after it completes (record result). If the session crashes between push and CI result, the pre-push entry is the rollback reference.
+
+### Context
+Steam library listing and login were working. Attempting to download a game (FlatOut 2, appId=2990) failed with:
+- `GetCDNAuthToken HTTP 404` — wrong protobuf field names in `input_json` (`appid` should be `app_id`, `depotid` → `depot_id`, `branch` → `app_branch`)
+- After fixing field names (commit `a7c1040`): manifest fetch returned HTTP 401 because Steam CDN requires a manifest request code obtained via the CM connection, not the Web API
+
+### Decision: Replace hand-rolled downloader with JavaSteam DepotDownloader
+Rather than continuing to debug the auth chain manually (CDN tokens + manifest codes + depot keys), replaced the entire `SteamDepotDownloader.java` with a Kotlin object that delegates to JavaSteam's built-in `DepotDownloader` class (`javasteam-depotdownloader` module). This handles all auth internally through the existing CM connection.
+
+**Rollback point:** commit `a7c1040` (tag `v1.0.1-steam-pre1` before force-retag) — last working build before DepotDownloader integration; Web API field names correct but still gets HTTP 401 on manifests.
+
+### Changes
+- **Deleted:** `extension/steam/SteamDepotDownloader.java`
+- **Created:** `extension/steam/SteamDepotDownloader.kt` — Kotlin `object` using `DepotDownloader(steamClient, licenses, androidEmulation=true, maxDownloads=4, maxDecompress=4)`; full `IDownloadListener` callbacks with debug logging; blocks on `getCompletion().get()`
+- **Modified:** `SteamRepository.java` — added `getSteamClient()` public getter (line 699); removed duplicate getter (line 707, fix commit `cc53d56`)
+- **Modified:** `SteamGameDetailActivity.kt` — updated to use Kotlin object directly (no `getInstance()`)
+- **Modified:** `.github/workflows/build.yml` — new step "Bundle DepotDownloader → DEX" that gathers `javasteam-depotdownloader.jar` + 11 transitive deps (ktor-client-cio, ktor-client-core, ktor-io, ktor-http, ktor-utils, ktor-network, ktor-network-tls, okio, kotlinx-io-core, kotlinx-serialization-json, kotlinx-serialization-core) and d8s them as a new DEX injected after the Kotlin Steam DEX; new step "Inject DepotDownloader DEX"
+
+### Commits & Builds
+| Commit | Tag | Description | CI Run | Result |
+|---|---|---|---|---|
+| `a7c1040` | v1.0.1-steam-pre1 | fix: correct proto field names in Web API requests | [24248122656](https://github.com/The412Banner/Ludashi-plus/actions/runs/24248122656) | ✅ success |
+| `e355cbd` | v1.0.1-steam-pre1 | feat: replace hand-rolled HTTP downloader with JavaSteam DepotDownloader | [24250630007](https://github.com/The412Banner/Ludashi-plus/actions/runs/24250630007) | ❌ dup getSteamClient() |
+| `cc53d56` | v1.0.1-steam-pre1 | fix: remove duplicate getSteamClient() | [24250847808](https://github.com/The412Banner/Ludashi-plus/actions/runs/24250847808) | ❌ Kotlin metadata 2.2.0 vs 1.9 |
+| `3ad6b2e` | v1.0.1-steam-pre1 | fix: -Xskip-metadata-version-check + coroutines-core on classpath | [24251136873](https://github.com/The412Banner/Ludashi-plus/actions/runs/24251136873) | ✅ success |
+| `185e11b` | v1.0.1-steam-pre1 | fix: bundle OkHttp3 + okhttp-coroutines; fix SteamDatabase restart crash | [24251573052](https://github.com/The412Banner/Ludashi-plus/actions/runs/24251573052) | ✅ success |
+
+### Crash analysis — log_2026_04_10_11_53_29 (installed `3ad6b2e`)
+**Primary:** `NoClassDefFoundError: okhttp3.coroutines.ExecuteAsyncKt` at `Client.kt:137`
+- javasteam CDN `Client.kt` uses OkHttp3 with coroutines extension (`executeAsync()`) to fetch manifests
+- We bundled Ktor CIO + Okio but forgot OkHttp entirely — OkHttp is a separate dep used by the main javasteam library, not DepotDownloader itself
+- Fix: `gather_jar "okhttp-[0-9]*.jar"` + `gather_jar "okhttp-coroutines-*.jar"` added to CI; Maven fallback = 5.0.0-alpha.14
+
+**Secondary:** `IllegalStateException: SteamDatabase not initialised` at `SteamDatabase.java:109`
+- Process killed by crash → ForegroundService restarted in fresh process → `SteamGamesActivity.onCreate` called `SteamRepository.getDatabase()` before `SteamRepository.initialize(ctx)` had run
+- Fix: `getDatabase()` now passes `appContext` to `SteamDatabase.getInstance(ctx)` when it's non-null (lazy init path)
+
+### Current APK state (as of 185e11b — 2026-04-10)
+- Tag: `v1.0.1-steam-pre1` (force-tagged through all fixes)
+- Branch: `steam`
+- Install attempt result: pending device test
+- Next expected failure point (if any): another missing transitive dep or a runtime error inside DepotDownloader itself
+
+---
+
+### Pre-push entry — 2026-04-10 — okhttp-coroutines compat shim + restart crash fix
+
+**Crash analysis — log_2026_04_10_12_12_38 (installed `185e11b`):**
+
+**Primary:** `NoSuchMethodError: CancellableContinuation.resume(Object, Function3)` at `ExecuteAsync.kt:46`
+- `okhttp-coroutines.jar` was compiled with Kotlin 2.x / coroutines 1.9+ which added a new `resume(value, onCancellation: Function3)` overload
+- Base APK has older coroutines — this method doesn't exist → NoSuchMethodError
+- Cannot override base APK's coroutines classes (DexClassLoader loads base APK first)
+- Fix: write compat shim `extension/steam/compat/ExecuteAsyncKt.kt` in `okhttp3.coroutines` package using `Continuation.resumeWith(Result.success(...))` from stdlib (always available); exclude `okhttp-coroutines.jar` from runtime DEX bundle
+
+**Secondary:** `SteamDatabase not initialised` crash on restart (same as before — fix was incomplete)
+- `appContext` is null in a freshly-restarted process so the `if (appContext != null)` guard falls through to the throwing path
+- Fix: `SteamGamesActivity.loadGames()` now catches `IllegalStateException`, redirects to `SteamMainActivity`, and finishes
+
+**Files changed:**
+- `extension/steam/compat/ExecuteAsyncKt.kt` — NEW — compat shim for `okhttp3.coroutines.executeAsync`
+- `.github/workflows/build.yml` — exclude `okhttp-coroutines.jar` from d8 bundle
+- `extension/steam/SteamGamesActivity.kt` — catch IllegalStateException in `loadGames()`, redirect to SteamMainActivity

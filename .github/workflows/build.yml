@@ -441,15 +441,18 @@ jobs:
           BUILD_TOOLS=$(ls $ANDROID_SDK_ROOT/build-tools | sort -V | tail -1)
           mkdir -p ext_depot_dex
 
-          # Build list of JARs to bundle: depotdownloader + all gathered deps
+          # Build list of JARs to bundle: depotdownloader + all gathered deps.
+          # okhttp-coroutines.jar is EXCLUDED from the runtime DEX — we provide
+          # a compat shim (extension/steam/compat/ExecuteAsyncKt.kt) compiled
+          # into the Kotlin Steam DEX that uses resumeWith(Result) instead of
+          # the Kotlin-2.x-only resume(value, Function3) overload.
           DD_JARS="javasteam-depotdownloader.jar"
           for dep in depot_deps/*.jar; do
             # Skip empty placeholder JARs (size 0)
-            if [ -s "$dep" ]; then
-              DD_JARS="$DD_JARS $dep"
-            else
-              echo "Skipping empty: $dep"
-            fi
+            [ -s "$dep" ] || { echo "Skipping empty: $dep"; continue; }
+            # Skip okhttp-coroutines — replaced by compat shim in Kotlin DEX
+            case "$dep" in *okhttp-coroutines*) echo "Excluding (compat shim): $dep"; continue ;; esac
+            DD_JARS="$DD_JARS $dep"
           done
 
           echo "=== DepotDownloader DEX input JARs ==="
