@@ -559,10 +559,11 @@ public final class SteamDepotDownloader {
             return 0L;
         }
         try {
+            // Proto field names use snake_case: app_id, depot_id, manifest_id, app_branch
             String body = "access_token=" + accessToken
                     + "&input_json=" + java.net.URLEncoder.encode(
-                            "{\"appid\":" + appId + ",\"depotid\":" + depotId
-                            + ",\"manifest_id\":" + manifestId + ",\"branch\":\"public\"}",
+                            "{\"app_id\":" + appId + ",\"depot_id\":" + depotId
+                            + ",\"manifest_id\":" + manifestId + ",\"app_branch\":\"public\"}",
                             "UTF-8");
             URL url = new URL("https://api.steampowered.com/IContentServerDirectoryService/GetManifestRequestCode/v1/");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -575,7 +576,14 @@ public final class SteamDepotDownloader {
             conn.getOutputStream().write(body.getBytes("UTF-8"));
             int code = conn.getResponseCode();
             dlog("GetManifestRequestCode HTTP " + code);
-            if (code != 200) return 0L;
+            // Log error body on non-200 for diagnosis
+            if (code != 200) {
+                try {
+                    InputStream err = conn.getErrorStream();
+                    if (err != null) dlog("GetManifestRequestCode error body: " + new String(readFully(err), "UTF-8"));
+                } catch (Exception ignored) {}
+                return 0L;
+            }
             String resp = new String(readFully(conn.getInputStream()), "UTF-8");
             dlog("GetManifestRequestCode response: " + resp);
             JSONObject root = new JSONObject(resp);
@@ -598,9 +606,10 @@ public final class SteamDepotDownloader {
             return "";
         }
         try {
+            // Proto field names use snake_case: app_id, depot_id, host_name
             String body = "access_token=" + accessToken
                     + "&input_json=" + java.net.URLEncoder.encode(
-                            "{\"appid\":" + appId + ",\"depotid\":" + depotId
+                            "{\"app_id\":" + appId + ",\"depot_id\":" + depotId
                             + ",\"host_name\":\"" + cdnHost + "\"}",
                             "UTF-8");
             URL url = new URL("https://api.steampowered.com/IContentServerDirectoryService/GetCDNAuthToken/v1/");
@@ -614,7 +623,14 @@ public final class SteamDepotDownloader {
             conn.getOutputStream().write(body.getBytes("UTF-8"));
             int code = conn.getResponseCode();
             dlog("GetCDNAuthToken HTTP " + code);
-            if (code != 200) return "";
+            // Log error body on non-200 for diagnosis
+            if (code != 200) {
+                try {
+                    InputStream err = conn.getErrorStream();
+                    if (err != null) dlog("GetCDNAuthToken error body: " + new String(readFully(err), "UTF-8"));
+                } catch (Exception ignored) {}
+                return "";
+            }
             String resp = new String(readFully(conn.getInputStream()), "UTF-8");
             dlog("GetCDNAuthToken response: " + resp);
             JSONObject root = new JSONObject(resp);
