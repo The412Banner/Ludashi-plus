@@ -774,3 +774,15 @@ Rather than continuing to debug the auth chain manually (CDN tokens + manifest c
 - `extension/steam/compat/ExecuteAsyncKt.kt` — NEW — compat shim for `okhttp3.coroutines.executeAsync`
 - `.github/workflows/build.yml` — exclude `okhttp-coroutines.jar` from d8 bundle
 - `extension/steam/SteamGamesActivity.kt` — catch IllegalStateException in `loadGames()`, redirect to SteamMainActivity
+
+### Pre-push entry — 2026-04-10 — Fix OkHttp Maven download + multi-version fallback
+
+**CI failure analysis (okhttp-coroutines compat build):**
+- `okhttp.jar` download returned HTML (404 page) — `5.0.0-alpha.14` doesn't exist or isn't resolvable on Maven Central for our URL format
+- `zip -d` on corrupt HTML file → "Zip file structure invalid"
+- kotlinc then failed with "unresolved reference: Call/Callback/Response" because `okhttp.jar` on DEPOT_CP was invalid/zero-size
+
+**Fix:**
+- `gather_jar` now uses `version="MULTI"` for okhttp/okhttp-coroutines
+- Multi-version loop tries `5.0.0` → `5.0.0-alpha.14` → `5.0.0-alpha.11` → `4.12.0` in order, validates each with `jar tf` before accepting
+- Single-version downloads also now validated with `jar tf` before accepting

@@ -309,16 +309,29 @@ jobs:
                 ktor-network-jvm-*)     group_path="io/ktor"; artifact="ktor-network-jvm"; version="3.2.2" ;;
                 ktor-network-tls-jvm-*) group_path="io/ktor"; artifact="ktor-network-tls-jvm"; version="3.2.2" ;;
                 okio-jvm-*)             group_path="com/squareup/okio"; artifact="okio-jvm"; version="3.16.0" ;;
-                okhttp-[0-9]*)          group_path="com/squareup/okhttp3"; artifact="okhttp"; version="5.0.0-alpha.14" ;;
-                okhttp-coroutines-*)    group_path="com/squareup/okhttp3"; artifact="okhttp-coroutines"; version="5.0.0-alpha.14" ;;
+                okhttp-[0-9]*)          group_path="com/squareup/okhttp3"; artifact="okhttp"; version="MULTI" ;;
+                okhttp-coroutines-*)    group_path="com/squareup/okhttp3"; artifact="okhttp-coroutines"; version="MULTI" ;;
                 kotlinx-io-core-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-io-core-jvm"; version="0.7.0" ;;
                 kotlinx-serialization-json-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-serialization-json-jvm"; version="1.9.0" ;;
                 kotlinx-serialization-core-jvm-*)  group_path="org/jetbrains/kotlinx"; artifact="kotlinx-serialization-core-jvm"; version="1.9.0" ;;
                 *) group_path=""; artifact=""; version="" ;;
               esac
-              if [ -n "$artifact" ]; then
+              if [ -n "$artifact" ] && [ "$version" != "MULTI" ]; then
                 wget -q "https://repo1.maven.org/maven2/${group_path}/${artifact}/${version}/${artifact}-${version}.jar" \
-                  -O "$dest" && echo "  ✓ downloaded $artifact-$version" || { echo "  ✗ download failed for $artifact"; touch "$dest"; }
+                  -O "$dest" && jar tf "$dest" > /dev/null 2>&1 \
+                  && echo "  ✓ downloaded $artifact-$version" \
+                  || { echo "  ✗ download/validate failed for $artifact-$version"; touch "$dest"; }
+              elif [ "$version" = "MULTI" ]; then
+                # Try multiple versions in order until we get a valid JAR
+                local ok=0
+                for v in "5.0.0" "5.0.0-alpha.14" "5.0.0-alpha.11" "4.12.0"; do
+                  wget -q "https://repo1.maven.org/maven2/${group_path}/${artifact}/${v}/${artifact}-${v}.jar" \
+                    -O "$dest" 2>/dev/null && jar tf "$dest" > /dev/null 2>&1 && {
+                    echo "  ✓ downloaded $artifact-$v"; ok=1; break
+                  }
+                  echo "  ✗ $artifact-$v not valid, trying next..."
+                done
+                [ $ok -eq 0 ] && { echo "  ✗ all versions failed for $artifact"; touch "$dest"; }
               else
                 touch "$dest"
               fi
