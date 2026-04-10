@@ -2,19 +2,26 @@ package com.winlator.cmod.store
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.LruCache
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.Executors
 
 /**
- * Steam library screen — lists owned games fetched via PICS sync.
+ * Steam library screen — shows only type="game" entries.
  *
- * Phase 4: shows games from SteamDatabase, refreshes on LibrarySynced event.
- * Pull-to-refresh triggers a manual re-sync.
+ * Each row shows the Steam library portrait art (600x900) loaded async,
+ * falling back to the header image (header.jpg) if portrait isn't available.
  */
 class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
 
@@ -26,15 +33,12 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val root = buildUI()
-        setContentView(root)
-
+        setContentView(buildUI())
         SteamRepository.getInstance().addListener(this)
         loadGames()
 
-        // If we're already logged in but the DB is empty (e.g. the sync event fired
-        // before this Activity opened), kick off a re-sync immediately.
+        // If already logged in but DB is empty (sync fired before Activity opened),
+        // kick off a re-sync immediately.
         val repo = SteamRepository.getInstance()
         if (games.isEmpty() && repo.isLoggedIn) {
             statusText.text = "Syncing library…"
@@ -65,22 +69,24 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
                 }
             }
             event.startsWith("LibrarySynced:") -> {
-                val count = event.substringAfter("LibrarySynced:").toIntOrNull() ?: 0
+                // Reload from DB and derive count from what's actually showing —
+                // the event count can be 0 if Steam returned empty "no change" buffers
+                // for apps that haven't changed since last request.
                 ui.post {
-                    statusText.text = "$count games in library"
                     loadGames()
+                    statusText.text = "${games.size} games in library"
                 }
             }
             event == "LoggedOut" -> {
                 ui.post { finish() }
             }
             event == "Disconnected" -> {
-                // Transient disconnect — SteamRepository will auto-reconnect.
-                // Don't close the activity; just update status so the user knows.
+                // Transient disconnect — auto-reconnect is in progress.
+                // Don't close the activity; just show status.
                 ui.post { statusText.text = "Disconnected — reconnecting…" }
             }
             event == "Connected" -> {
-                // After reconnect, if DB still empty and now logged in, retry sync.
+                // After reconnect, retry sync if still empty.
                 val repo = SteamRepository.getInstance()
                 if (games.isEmpty() && repo.isLoggedIn) {
                     ui.post { statusText.text = "Reconnected — syncing library…" }
@@ -91,13 +97,15 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
     }
 
     // -------------------------------------------------------------------------
-    // Data
+    // Data — only show type="game" entries
     // -------------------------------------------------------------------------
 
     private fun loadGames() {
-        val repo = SteamRepository.getInstance()
-        val rows = repo.database.allGames
-        games = rows.map { SteamGame.fromGameRow(it) }
+        val rows = SteamRepository.getInstance().database.allGames
+        games = rows
+            .filter { it.type == "game" }
+            .map { SteamGame.fromGameRow(it) }
+            .sortedBy { it.name.lowercase() }
         refreshList()
     }
 
@@ -105,12 +113,22 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
         val adapter = object : ArrayAdapter<SteamGame>(this, 0, games) {
             override fun getView(pos: Int, convertView: View?, parent: ViewGroup): View {
                 val game = getItem(pos)!!
-                val row = convertView as? LinearLayout ?: buildRow()
-                val nameView  = row.getChildAt(0) as TextView
-                val typeView  = row.getChildAt(1) as TextView
+                val row = (convertView as? LinearLayout) ?: buildRow()
+                // Tag the row with appId so the async image loader can detect recycling
+                row.tag = game.appId
+
+                val artView  = row.getChildAt(0) as ImageView
+                val infoView = row.getChildAt(1) as LinearLayout
+                val nameView = infoView.getChildAt(0) as TextView
+                val sizeView = infoView.getChildAt(1) as TextView
+
                 nameView.text = game.name.ifEmpty { "App ${game.appId}" }
-                typeView.text = game.type.uppercase()
-                typeView.setTextColor(if (game.type == "game") Color.parseColor("#4CAF50") else Color.parseColor("#FF9800"))
+                val mb = game.sizeBytes / (1024L * 1024L)
+                sizeView.text = if (mb > 0) "${mb} MB" else ""
+
+                // Reset art to placeholder then kick off async load
+                artView.setImageResource(android.R.color.darker_gray)
+                loadCoverArt(artView, game.appId)
                 return row
             }
         }
@@ -120,20 +138,55 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
     }
 
     // -------------------------------------------------------------------------
+    // Cover art loading
+    // -------------------------------------------------------------------------
+
+    private fun loadCoverArt(view: ImageView, appId: Int) {
+        imageCache.get(appId)?.let { cached ->
+            view.setImageBitmap(cached)
+            return
+        }
+        imageExecutor.submit {
+            // Try portrait art first (600x900), fall back to wide header
+            val bmp = tryBitmap("https://shared.steamstatic.com/store_item_assets/steam/apps/$appId/library_600x900.jpg")
+                   ?: tryBitmap("https://shared.steamstatic.com/store_item_assets/steam/apps/$appId/header.jpg")
+            if (bmp != null) {
+                imageCache.put(appId, bmp)
+                ui.post {
+                    // Only set if this view still shows the same appId (not recycled)
+                    val parent = view.parent as? LinearLayout
+                    if (parent?.tag == appId) view.setImageBitmap(bmp)
+                }
+            }
+        }
+    }
+
+    private fun tryBitmap(url: String): Bitmap? = try {
+        val conn = URL(url).openConnection() as HttpURLConnection
+        conn.connectTimeout = 6_000
+        conn.readTimeout    = 10_000
+        conn.connect()
+        if (conn.responseCode == 200)
+            BitmapFactory.decodeStream(conn.inputStream)
+        else null
+    } catch (_: Exception) { null }
+
+    // -------------------------------------------------------------------------
     // UI construction
     // -------------------------------------------------------------------------
 
     private fun buildUI(): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#1B1B1B"))
+            setBackgroundColor(BG)
         }
 
         // Header bar
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setPadding(dp(8), dp(8), dp(8), dp(8))
             setBackgroundColor(Color.parseColor("#212121"))
+            gravity = Gravity.CENTER_VERTICAL
         }
         val backBtn = Button(this).apply {
             text = "←"
@@ -150,7 +203,7 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
         }
         val refreshBtn = Button(this).apply {
             text = "↻"
-            setTextColor(Color.parseColor("#4FC3F7"))
+            setTextColor(BLUE)
             setBackgroundColor(Color.TRANSPARENT)
             setOnClickListener { SteamRepository.getInstance().syncLibrary() }
         }
@@ -163,18 +216,18 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
         statusText = TextView(this).apply {
             text = "Loading library…"
             textSize = 12f
-            setTextColor(Color.parseColor("#AAAAAA"))
-            setPadding(dp(12), dp(6), dp(12), dp(6))
+            setTextColor(GRAY)
+            setPadding(dp(12), dp(5), dp(12), dp(5))
             setBackgroundColor(Color.parseColor("#1A1A2E"))
         }
         root.addView(statusText)
 
         // Empty state
         emptyText = TextView(this).apply {
-            text = "No games found.\nIf sync just finished, tap ↻ to refresh.\nMake sure you are logged in to Steam."
+            text = "No games found.\nIf sync just finished, tap ↻ to refresh."
             textSize = 14f
-            setTextColor(Color.parseColor("#888888"))
-            gravity = android.view.Gravity.CENTER
+            setTextColor(GRAY)
+            gravity = Gravity.CENTER
             setPadding(dp(24), dp(48), dp(24), dp(24))
             visibility = View.GONE
         }
@@ -183,7 +236,7 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
 
         // Game list
         listView = ListView(this).apply {
-            setBackgroundColor(Color.parseColor("#1B1B1B"))
+            setBackgroundColor(BG)
             divider = null
             dividerHeight = dp(1)
             setOnItemClickListener { _, _, pos, _ ->
@@ -198,21 +251,61 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
         return root
     }
 
+    /** Build a card row: [portrait art | game name + size] */
     private fun buildRow(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
-        setPadding(dp(16), dp(12), dp(16), dp(12))
+        setBackgroundColor(CARD_BG)
+        setPadding(0, 0, 0, 0)
+
+        // Portrait art thumbnail (approx 2:3 ratio)
+        val artWidth  = dp(80)
+        val artHeight = dp(120)
+        val artView = ImageView(this@SteamGamesActivity).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            setBackgroundColor(Color.parseColor("#2A2A2A"))
+        }
+        addView(artView, LinearLayout.LayoutParams(artWidth, artHeight))
+
+        // Right side: name + size
+        val infoLayout = LinearLayout(this@SteamGamesActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(8), dp(8))
+        }
         val nameView = TextView(this@SteamGamesActivity).apply {
             textSize = 14f
             setTextColor(Color.WHITE)
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
         }
-        val typeView = TextView(this@SteamGamesActivity).apply {
-            textSize = 10f
-            setPadding(dp(4), dp(2), dp(4), dp(2))
+        val sizeView = TextView(this@SteamGamesActivity).apply {
+            textSize = 11f
+            setTextColor(GRAY)
+            setPadding(0, dp(4), 0, 0)
         }
-        addView(nameView)
-        addView(typeView)
+        infoLayout.addView(nameView, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        infoLayout.addView(sizeView, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        addView(infoLayout, LinearLayout.LayoutParams(0, artHeight, 1f))
+
+        // Bottom divider
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).also { it.bottomMargin = dp(2) }
     }
 
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    private fun dp(v: Int) = (v * resources.displayMetrics.density + 0.5f).toInt()
+
+    companion object {
+        private val BG      = Color.parseColor("#1B1B1B")
+        private val CARD_BG = Color.parseColor("#252525")
+        private val GRAY    = Color.parseColor("#AAAAAA")
+        private val BLUE    = Color.parseColor("#4FC3F7")
+
+        // Shared LRU image cache (4 MB cap) and fixed thread pool across instances
+        private val imageCache = LruCache<Int, Bitmap>(4 * 1024 * 1024)
+        private val imageExecutor = Executors.newFixedThreadPool(4)
+    }
 }
