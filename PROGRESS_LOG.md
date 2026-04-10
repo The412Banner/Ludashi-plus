@@ -700,3 +700,8 @@ Implement full depot download: manifest IDs from PICS, depot key fetching, CDN d
 - `kvStr()` helper: all `asString()` calls in PICS handler are now null-safe (NPE was crashing sync)
 - `SteamGamesActivity`: only `finish()` on LoggedOut, not Disconnected; sync kickstart on empty DB
 - Type filter broadened (tool/hardware/music/video/advertising excluded; everything else shown)
+
+### pre1 update — 2026-04-10 — Games filter + cover art (`b8099da`)
+- Only type="game" shown in library list
+- Status count from games.size (not sync event count)
+- Portrait cover art per row (async, LruCache)
