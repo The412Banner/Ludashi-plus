@@ -4,14 +4,28 @@ Build and modification history for Ludashi-plus — Winlator Ludashi v2.9 bionic
 
 ---
 
-### [pre] — v1.0.6-steam-pre1 — 16 parallel downloads, game list cache (2026-04-10)
-**Commit:** `c9ea683` | **Tag:** v1.0.6-steam-pre1 | CI pending
-#### What changed
-- `SteamDepotDownloader.kt`: `maxDownloads` + `maxDecompress` `4 → 16` for faster chunk throughput
+### [pre] — v1.0.6-steam-pre1 — Speed picker, depot fix, cancel reset (2026-04-10)
+**Commit:** `c0353e7` | **Tag:** v1.0.6-steam-pre1 | CI ✅ run 24273964057
+
+#### What changed (4 commits since rollback to b76cb88)
+- `cb50889` — feat: download speed picker dialog shown before install — Safe (4 threads) / Normal (8) / Fast (16); `SteamGameDetailActivity.showDownloadSpeedPicker()`; `SteamDepotDownloader.installApp()` + `runInstall()` accept `threads: Int`
+- `6f33826` — fix: AppItem now explicitly sets `os = "windows"` + `downloadAllArchs = true` — fixes "Couldn't find any depots to download" (`Util.getSteamArch()` returns device arch like `armv8l` on some devices, which filtered all Windows depots)
+- `7048527` — fix: `getCachedGameRows()` calls `getAllGames()` not `.allGames` — Java cannot access Kotlin property by field name; caused NoSuchMethodError at runtime
+- `c0353e7` — fix: cancel always resets UI — `CancellationException` was bypassing `onDownloadFailed` path; `finally` block with `completedNormally` flag now guarantees `DownloadCancelled` emitted regardless of exception type
+
+#### Also included (from c9ea683 base)
 - `SteamRepository.java`: `getCachedGameRows()` / `invalidateGameCache()` in-memory cache; `emit()` invalidates on `LibrarySynced:`, `DownloadComplete:`, `DownloadCancelled:`
-- `SteamRepository.java`: `SteamCloud` + `SteamUserStats` fields + accessors (`getSteamCloud`, `getSteamUserStats`, `getSteamApps`, `getCallbackManager`)
+- `SteamRepository.java`: `SteamCloud` + `SteamUserStats` fields + accessors (`getSteamCloud`, `getSteamUserStats`, `getCallbackManager`)
+- `SteamDepotDownloader.kt`: `maxDownloads` + `maxDecompress` configurable (default 4)
+
 #### Note
-Branch rolled back to v1.0.5-steam-pre1 first (removed Pluvia compile-error commits ee16d42 + 7b2530e), then these two features cherry-picked clean without the card UI rewrite.
+Branch rolled back to v1.0.5-steam-pre1 (b76cb88) first — removed broken Pluvia commits (ee16d42 + 7b2530e) that had compile errors. Features cherry-picked clean without the card UI rewrite.
+
+#### Known issues (in release description)
+- UI does not refresh after cancelling a download (button/bar reset on next open)
+- QR code login untested
+- Downloads may exceed listed MB size (shared Valve base depots 1/2/3 not counted in PICS size)
+- After all fixes applied and features working correctly, branch will be merged to main
 
 ### Post-CI — v1.0.3-steam-pre1 — Cancel button + launch exe picker (2026-04-11)
 - CI run: 24270078935 ✅ success — auto-published
