@@ -161,7 +161,7 @@ public final class SteamRepository {
     public List<SteamDatabase.GameRow> getCachedGameRows() {
         List<SteamDatabase.GameRow> rows = cachedGameRows;
         if (rows != null) return rows;
-        rows = database.allGames;
+        rows = getDatabase().allGames;
         cachedGameRows = rows;
         return rows;
     }
@@ -178,7 +178,6 @@ public final class SteamRepository {
 
     public SteamCloud     getSteamCloud()     { return steamCloud; }
     public SteamUserStats getSteamUserStats() { return steamUserStats; }
-    public SteamApps      getSteamApps()      { return steamApps; }
     public CallbackManager getCallbackManager() { return manager; }
 
     // -------------------------------------------------------------------------
