@@ -87,13 +87,14 @@ object SteamDepotDownloader {
 
     /**
      * Start install. Returns a Runnable that cancels the download when run.
+     * @param threads number of parallel chunk downloads + decompression workers (4 / 8 / 16)
      */
-    fun installApp(appId: Int, ctx: Context): Runnable {
+    fun installApp(appId: Int, ctx: Context, threads: Int = 4): Runnable {
         val cancelled = AtomicBoolean(false)
         val downloaderRef = AtomicReference<DepotDownloader?>(null)
 
         CoroutineScope(Dispatchers.IO).launch {
-            runInstall(appId, ctx, cancelled, downloaderRef)
+            runInstall(appId, ctx, cancelled, downloaderRef, threads)
         }
 
         return Runnable {
@@ -115,6 +116,7 @@ object SteamDepotDownloader {
         ctx: Context,
         cancelled: AtomicBoolean,
         downloaderRef: AtomicReference<DepotDownloader?>,
+        threads: Int = 4,
     ) {
         initDebugLog(ctx)
         dlog("=== Starting install: appId=$appId ===")
@@ -167,15 +169,15 @@ object SteamDepotDownloader {
         // Running total — updated from chunk data when PICS size was wrong/zero
         val totalRunning = AtomicLong(totalExpected)
 
-        dlog("Constructing DepotDownloader(androidEmulation=true, maxDownloads=16, maxDecompress=16, debug=true)")
+        dlog("Constructing DepotDownloader(androidEmulation=true, maxDownloads=$threads, maxDecompress=$threads, debug=true)")
         val downloader = try {
             DepotDownloader(
                 steamClient = steamClient,
                 licenses = licenses,
                 debug = true,
                 androidEmulation = true,   // forces Windows OS filter — essential for games
-                maxDownloads = 16,
-                maxDecompress = 16,
+                maxDownloads = threads,
+                maxDecompress = threads,
                 autoStartDownload = false,
             )
         } catch (e: Exception) {

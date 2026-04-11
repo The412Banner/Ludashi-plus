@@ -214,9 +214,7 @@ class SteamGameDetailActivity : Activity(), SteamRepository.SteamEventListener {
             }
             loadGame()
         } else {
-            installBtn.isEnabled = false
-            installBtn.text = "Starting…"
-            cancelRef = SteamDepotDownloader.installApp(appId, applicationContext)
+            showDownloadSpeedPicker()
         }
     }
 
@@ -255,6 +253,27 @@ class SteamGameDetailActivity : Activity(), SteamRepository.SteamEventListener {
                 ui.post { LudashiLaunchBridge.addToLauncher(this, g.name, chosen) }
             }
         }.start()
+    }
+
+    private fun showDownloadSpeedPicker() {
+        val options = arrayOf(
+            "Safe (4 threads) — least RAM/CPU usage",
+            "Normal (8 threads) — balanced",
+            "Fast (16 threads) — maximum speed"
+        )
+        val threadCounts = intArrayOf(4, 8, 16)
+        var selected = 0  // default: Safe
+
+        AlertDialog.Builder(this)
+            .setTitle("Download speed")
+            .setSingleChoiceItems(options, selected) { _, which -> selected = which }
+            .setPositiveButton("Download") { _, _ ->
+                installBtn.isEnabled = false
+                installBtn.text = "Starting…"
+                cancelRef = SteamDepotDownloader.installApp(appId, applicationContext, threadCounts[selected])
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun showExePicker(candidates: List<String>, onSelected: (String) -> Unit) {
