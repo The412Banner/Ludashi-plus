@@ -4,6 +4,26 @@ Build and modification history for Ludashi-plus — Winlator Ludashi v2.9 bionic
 
 ---
 
+### [stable] — v1.1.0 — APK variants + README + Genshin package fix (2026-04-11)
+**Commit:** `8268b62` | **Tag:** v1.1.0 (force-updated) | CI ✅ pending
+
+#### What changed since first v1.1.0 tag
+- `d55079f` — docs: README updated — Steam added to subtitle/description, full Steam feature list, installation section updated (over-original possible but at your own risk), "Steam coming soon" removed, JavaSteam credited
+- `eae06ab` — ci: initial variant build (sequential loop, all builds) — superseded
+- `800ce86` — ci: parallel matrix variant builds — stable releases only; 4 workers (Vanilla/PuBG/Genshin/AnTuTu) run simultaneously via GitHub Actions matrix; pre-release builds unchanged (1 APK only); `rebuilt-aligned.apk` uploaded as 1-day artifact for variant jobs to consume
+- `8268b62` — ci: fix Genshin package name casing (`com.miHoYo.GenshinImpact`)
+
+#### 5 APKs produced on stable releases
+| File | Package | App Name |
+|---|---|---|
+| `LudashiPlus-{tag}.apk` | `com.ludashi.benchmark` | Winlator Ludashi+ |
+| `LudashiPlus-{tag}-Vanilla.apk` | `com.winlator.vanilla` | Winlator Ludashi+ Vanilla |
+| `LudashiPlus-{tag}-PuBG.apk` | `com.tencent.ig` | Winlator Ludashi+ PuBG |
+| `LudashiPlus-{tag}-Genshin.apk` | `com.miHoYo.GenshinImpact` | Winlator Ludashi+ Genshin |
+| `LudashiPlus-{tag}-AnTuTu.apk` | `com.antutu.ABenchMark` | Winlator Ludashi+ AnTuTu |
+
+---
+
 ### [stable] — v1.1.0 — Full Steam integration (2026-04-11)
 **Commit:** `03c636a` | **Tag:** v1.1.0 | CI ✅ run 24285062079
 #### What's in this release
