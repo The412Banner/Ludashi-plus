@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import in.dragonbra.javasteam.enums.EResult;
 import in.dragonbra.javasteam.networking.steam3.ProtocolTypes;
+import in.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud;
+import in.dragonbra.javasteam.steam.handlers.steamuserstats.SteamUserStats;
 import in.dragonbra.javasteam.steam.handlers.steamapps.License;
 import in.dragonbra.javasteam.steam.handlers.steamapps.PICSProductInfo;
 import in.dragonbra.javasteam.steam.handlers.steamapps.PICSRequest;
@@ -115,10 +117,12 @@ public final class SteamRepository {
     // JavaSteam instances
     // -------------------------------------------------------------------------
 
-    private SteamClient     steamClient  = null;
+    private SteamClient    steamClient   = null;
     private CallbackManager manager      = null;
-    private SteamUser       steamUser    = null;
-    private SteamApps       steamApps    = null;
+    private SteamUser      steamUser     = null;
+    private SteamApps      steamApps     = null;
+    private SteamCloud     steamCloud    = null;
+    private SteamUserStats steamUserStats = null;
 
     private HandlerThread     pumpThread  = null;
     private Handler           pumpHandler = null;
@@ -143,6 +147,28 @@ public final class SteamRepository {
     public void requestDepotKey(int depotId, int appId) {
         if (steamApps == null) return;
         steamApps.getDepotDecryptionKey(depotId, appId);
+    }
+
+    // -------------------------------------------------------------------------
+    // In-memory game list cache
+    // -------------------------------------------------------------------------
+
+    /** Cached list of all rows from the DB (type filter applied by caller).
+     *  Invalidated on LibrarySynced, DownloadComplete, and uninstall. */
+    private volatile List<SteamDatabase.GameRow> cachedGameRows = null;
+
+    /** Return cached rows if available, otherwise query the DB and cache. */
+    public List<SteamDatabase.GameRow> getCachedGameRows() {
+        List<SteamDatabase.GameRow> rows = cachedGameRows;
+        if (rows != null) return rows;
+        rows = database.allGames;
+        cachedGameRows = rows;
+        return rows;
+    }
+
+    /** Force the next getCachedGameRows() call to re-query the DB. */
+    public void invalidateGameCache() {
+        cachedGameRows = null;
     }
 
     // -------------------------------------------------------------------------
@@ -184,6 +210,16 @@ public final class SteamRepository {
     public void storeCdnAuthToken(String cdnHost, String token) {
         cdnTokens.put(cdnHost, token);
     }
+
+    // -------------------------------------------------------------------------
+    // Pluvia handlers: SteamCloud + SteamUserStats (exposed for SteamCloudSync
+    // and SteamAppTicket which need them after login)
+    // -------------------------------------------------------------------------
+
+    public SteamCloud     getSteamCloud()     { return steamCloud; }
+    public SteamUserStats getSteamUserStats() { return steamUserStats; }
+    public SteamApps      getSteamApps()      { return steamApps; }
+    public CallbackManager getCallbackManager() { return manager; }
 
     // -------------------------------------------------------------------------
     // PICS sync state (Phase 4)
@@ -716,6 +752,12 @@ public final class SteamRepository {
     // -------------------------------------------------------------------------
 
     public void emit(String event) {
+        // Invalidate the in-memory game list on events that change DB state
+        if (event.startsWith("LibrarySynced:") ||
+            event.startsWith("DownloadComplete:") ||
+            event.startsWith("DownloadCancelled:")) {
+            cachedGameRows = null;
+        }
         for (SteamEventListener l : listeners) {
             try { l.onEvent(event); }
             catch (Exception e) { Log.e(TAG, "Listener error for event " + event, e); }

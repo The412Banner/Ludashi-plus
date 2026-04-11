@@ -167,15 +167,15 @@ object SteamDepotDownloader {
         // Running total — updated from chunk data when PICS size was wrong/zero
         val totalRunning = AtomicLong(totalExpected)
 
-        dlog("Constructing DepotDownloader(androidEmulation=true, maxDownloads=4, maxDecompress=4, debug=true)")
+        dlog("Constructing DepotDownloader(androidEmulation=true, maxDownloads=16, maxDecompress=16, debug=true)")
         val downloader = try {
             DepotDownloader(
                 steamClient = steamClient,
                 licenses = licenses,
                 debug = true,
                 androidEmulation = true,   // forces Windows OS filter — essential for games
-                maxDownloads = 4,
-                maxDecompress = 4,
+                maxDownloads = 16,
+                maxDecompress = 16,
                 autoStartDownload = false,
             )
         } catch (e: Exception) {
