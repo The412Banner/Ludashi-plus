@@ -127,13 +127,15 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
                 // Tag the row with appId so the async image loader can detect recycling
                 row.tag = game.appId
 
-                val artView      = row.getChildAt(0) as ImageView
-                val infoView     = row.getChildAt(1) as LinearLayout
-                val nameView     = infoView.getChildAt(0) as TextView
+                val artView       = row.getChildAt(0) as ImageView
+                val infoView      = row.getChildAt(1) as LinearLayout
+                val nameView      = infoView.getChildAt(0) as TextView
                 val developerView = infoView.getChildAt(1) as TextView
-                val genresView   = infoView.getChildAt(2) as TextView
-                val sizeView     = infoView.getChildAt(3) as TextView
-                val metaView     = infoView.getChildAt(4) as TextView
+                val genresView    = infoView.getChildAt(2) as TextView
+                val sizeView      = infoView.getChildAt(3) as TextView
+                val metaView      = infoView.getChildAt(4) as TextView
+                val installedLabel = infoView.getChildAt(5) as TextView
+                val uninstallBtn  = infoView.getChildAt(6) as Button
 
                 nameView.text = game.name.ifEmpty { "App ${game.appId}" }
 
@@ -157,6 +159,23 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
                     metaView.visibility = View.VISIBLE
                 } else {
                     metaView.visibility = View.GONE
+                }
+
+                // Installed indicator + uninstall button
+                if (game.isInstalled) {
+                    installedLabel.visibility = View.VISIBLE
+                    uninstallBtn.visibility   = View.VISIBLE
+                    uninstallBtn.setOnClickListener {
+                        val db = SteamRepository.getInstance().database
+                        db.markUninstalled(game.appId)
+                        if (game.installDir.isNotEmpty()) {
+                            Thread { java.io.File(game.installDir).deleteRecursively() }.start()
+                        }
+                        loadGames()
+                    }
+                } else {
+                    installedLabel.visibility = View.GONE
+                    uninstallBtn.visibility   = View.GONE
                 }
 
                 // Reset art to placeholder then kick off async load
@@ -333,13 +352,36 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
         // child 4: metacritic score (color set dynamically)
         val metaView = smallText()
 
+        // child 5: installed indicator
+        val installedLabel = TextView(this@SteamGamesActivity).apply {
+            text = "● Installed"
+            textSize = 11f
+            setTextColor(0xFF4CAF50.toInt())  // green
+            setPadding(0, dp(3), 0, 0)
+            visibility = View.GONE
+        }
+
+        // child 6: uninstall button
+        val uninstallBtn = Button(this@SteamGamesActivity).apply {
+            text = "Uninstall"
+            textSize = 11f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(0xFFB71C1C.toInt())
+            setPadding(dp(8), dp(2), dp(8), dp(2))
+            visibility = View.GONE
+        }
+
         val wrapLp = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        infoLayout.addView(nameView,      wrapLp)
-        infoLayout.addView(developerView, wrapLp)
-        infoLayout.addView(genresView,    wrapLp)
-        infoLayout.addView(sizeView,      wrapLp)
-        infoLayout.addView(metaView,      wrapLp)
+        val uninstallLp = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, dp(30)).apply { topMargin = dp(3) }
+        infoLayout.addView(nameView,       wrapLp)
+        infoLayout.addView(developerView,  wrapLp)
+        infoLayout.addView(genresView,     wrapLp)
+        infoLayout.addView(sizeView,       wrapLp)
+        infoLayout.addView(metaView,       wrapLp)
+        infoLayout.addView(installedLabel, wrapLp)
+        infoLayout.addView(uninstallBtn,   uninstallLp)
 
         addView(infoLayout, LinearLayout.LayoutParams(0, artHeight, 1f))
 
