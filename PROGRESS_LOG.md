@@ -4,6 +4,15 @@ Build and modification history for Ludashi-plus — Winlator Ludashi v2.9 bionic
 
 ---
 
+### [pre] — v1.0.6-steam-pre1 — 16 parallel downloads, game list cache (2026-04-10)
+**Commit:** `c9ea683` | **Tag:** v1.0.6-steam-pre1 | CI pending
+#### What changed
+- `SteamDepotDownloader.kt`: `maxDownloads` + `maxDecompress` `4 → 16` for faster chunk throughput
+- `SteamRepository.java`: `getCachedGameRows()` / `invalidateGameCache()` in-memory cache; `emit()` invalidates on `LibrarySynced:`, `DownloadComplete:`, `DownloadCancelled:`
+- `SteamRepository.java`: `SteamCloud` + `SteamUserStats` fields + accessors (`getSteamCloud`, `getSteamUserStats`, `getSteamApps`, `getCallbackManager`)
+#### Note
+Branch rolled back to v1.0.5-steam-pre1 first (removed Pluvia compile-error commits ee16d42 + 7b2530e), then these two features cherry-picked clean without the card UI rewrite.
+
 ### Post-CI — v1.0.3-steam-pre1 — Cancel button + launch exe picker (2026-04-11)
 - CI run: 24270078935 ✅ success — auto-published
 - Commit: `23ff7e0`
