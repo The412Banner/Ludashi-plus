@@ -4,6 +4,24 @@ Build and modification history for Ludashi-plus — Winlator Ludashi v2.9 bionic
 
 ---
 
+### [stable] — v1.1.0 — Full Steam integration (2026-04-11)
+**Commit:** `03c636a` | **Tag:** v1.1.0 | CI ✅ run 24285062079
+#### What's in this release
+- Steam login (username+password verified; QR needs testing)
+- PICS library sync with cover art, developer, genres, Metacritic score, size
+- Download speed picker: Safe 4 / Normal 8 / Fast 16 threads
+- Pause/Resume download — persists DL_PAUSED state in DB across app restarts
+- Cancel download — stops + deletes partial files immediately
+- Stale DL_DOWNLOADING rows auto-cleaned via `SteamDepotDownloader.isDownloading()`
+- Logout button in library header with confirmation dialog
+- Auto-rotate on Steam library + game detail screens (configChanges, no recreation)
+- Game library cached in memory; auto-syncs only if empty or >4 hours stale
+- Manual Refresh button always triggers full PICS sync
+- Installed/uninstalled state reflected immediately (cache invalidated on all write paths)
+- steam branch merged to main via fast-forward; v1.0.6-steam-pre1 pre-release deleted
+
+---
+
 ### [pre] — v1.0.6-steam-pre1 — Speed picker, depot fix, cancel reset (2026-04-10)
 **Commit:** `c0353e7` | **Tag:** v1.0.6-steam-pre1 | CI ✅ run 24273964057
 
