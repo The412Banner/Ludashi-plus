@@ -714,7 +714,7 @@ jobs:
             package: com.tencent.ig
             label: "Winlator Ludashi+ PuBG"
           - suffix: Genshin
-            package: com.mihoyo.genshinimpact
+            package: com.miHoYo.GenshinImpact
             label: "Winlator Ludashi+ Genshin"
           - suffix: AnTuTu
             package: com.antutu.ABenchMark
