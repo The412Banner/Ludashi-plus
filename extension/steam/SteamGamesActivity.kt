@@ -27,9 +27,11 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
 
     private val ui = Handler(Looper.getMainLooper())
     private lateinit var statusText: TextView
+    private lateinit var searchBar: EditText
     private lateinit var listView: ListView
     private lateinit var emptyText: TextView
     private var games: List<SteamGame> = emptyList()
+    private var searchQuery: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,7 +142,14 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
     }
 
     private fun refreshList() {
-        val adapter = object : ArrayAdapter<SteamGame>(this, 0, games) {
+        val filtered = if (searchQuery.isEmpty()) games
+            else games.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        if (searchQuery.isNotEmpty()) {
+            statusText.text = "${filtered.size} of ${games.size} games"
+        } else if (games.isNotEmpty()) {
+            statusText.text = "${games.size} games in library"
+        }
+        val adapter = object : ArrayAdapter<SteamGame>(this, 0, filtered) {
             override fun getView(pos: Int, convertView: View?, parent: ViewGroup): View {
                 val game = getItem(pos)!!
                 val row = (convertView as? LinearLayout) ?: buildRow()
@@ -243,8 +252,10 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
             }
         }
         listView.adapter = adapter
-        emptyText.visibility = if (games.isEmpty()) View.VISIBLE else View.GONE
-        listView.visibility  = if (games.isEmpty()) View.GONE   else View.VISIBLE
+        emptyText.text       = if (searchQuery.isNotEmpty() && filtered.isEmpty())
+            "No games match \"$searchQuery\"." else "No games found.\nIf sync just finished, tap Refresh."
+        emptyText.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+        listView.visibility  = if (filtered.isEmpty()) View.GONE   else View.VISIBLE
     }
 
     // -------------------------------------------------------------------------
@@ -353,6 +364,29 @@ class SteamGamesActivity : Activity(), SteamRepository.SteamEventListener {
             setBackgroundColor(Color.parseColor("#1A1A2E"))
         }
         root.addView(statusText)
+
+        // Search bar
+        searchBar = EditText(this).apply {
+            hint = "Search games…"
+            setHintTextColor(0xFF666666.toInt())
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#2A2A2A"))
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            textSize = 14f
+            maxLines = 1
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
+            addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, a: Int) {}
+                override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) {
+                    searchQuery = s?.toString()?.trim() ?: ""
+                    refreshList()
+                }
+            })
+        }
+        root.addView(searchBar, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(44)))
 
         // Empty state
         emptyText = TextView(this).apply {
