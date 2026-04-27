@@ -394,6 +394,34 @@ jobs:
           grep "main_menu_gog\|main_menu_epic\|main_menu_amazon\|main_menu_steam" \
             apktool_out_base/res/menu/main_menu.xml
 
+      - name: Patch XServerDisplayActivity — skip d3d12 restore when DXVK profile provides it
+        run: |
+          python3 - <<'EOF'
+          import sys
+          path = "apktool_out_base/smali_classes8/com/winlator/cmod/XServerDisplayActivity.smali"
+          with open(path, "r") as f:
+              content = f.read()
+          old = (
+              "    if-eqz v6, :cond_2\n\n"
+              "    .line 1532\n"
+              "    const/4 v5, 0x2"
+          )
+          new = (
+              "    if-eqz v6, :cond_2\n\n"
+              "    if-nez v17, :goto_1\n\n"
+              "    .line 1532\n"
+              "    const/4 v5, 0x2"
+          )
+          if old in content:
+              content = content.replace(old, new, 1)
+              with open(path, "w") as f:
+                  f.write(content)
+              print("OK: d3d12 restore skip patched")
+          else:
+              print("ERROR: pattern not found — patch failed", file=sys.stderr)
+              sys.exit(1)
+          EOF
+
       - name: Download org.json for Java compilation
         run: |
           wget -q "https://repo1.maven.org/maven2/org/json/json/20240303/json-20240303.jar" \
