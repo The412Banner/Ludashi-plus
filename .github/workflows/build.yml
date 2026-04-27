@@ -394,7 +394,7 @@ jobs:
           grep "main_menu_gog\|main_menu_epic\|main_menu_amazon\|main_menu_steam" \
             apktool_out_base/res/menu/main_menu.xml
 
-      - name: Patch XServerDisplayActivity — skip d3d12 restore when DXVK profile provides it
+      - name: Patch XServerDisplayActivity — use bundled VKD3D for d3d12 when VKD3D=None
         run: |
           python3 - <<'EOF'
           import sys
@@ -402,8 +402,9 @@ jobs:
           with open(path, "r") as f:
               content = f.read()
 
-          # Patch 1: when VKD3D=None, never restore d3d12 — leave whatever is in system32
-          # (custom unified DXVK content puts VKD3D-Proton d3d12 there; don't overwrite it)
+          # Patch 1: when VKD3D=None, extract bundled vkd3d-2.14.1 for d3d12 instead of restoring stub
+          # Jump to :cond_3 (bundled VKD3D extraction path) with v14 set to "vkd3d-2.14.1"
+          # so DXVK handles D3D8-11 (from custom content) and VKD3D 2.14.1 handles D3D12
           old1 = (
               "    if-eqz v6, :cond_2\n\n"
               "    .line 1532\n"
@@ -411,13 +412,14 @@ jobs:
           )
           new1 = (
               "    if-eqz v6, :cond_2\n\n"
-              "    goto :goto_1\n\n"
+              "    const-string v14, \"vkd3d-2.14.1\"\n\n"
+              "    goto :cond_3\n\n"
               "    .line 1532\n"
               "    const/4 v5, 0x2"
           )
           if old1 in content:
               content = content.replace(old1, new1, 1)
-              print("OK: patch 1 — d3d12 restore skip")
+              print("OK: patch 1 — VKD3D=None now extracts bundled vkd3d-2.14.1")
           else:
               print("ERROR: patch 1 pattern not found", file=sys.stderr)
               sys.exit(1)
