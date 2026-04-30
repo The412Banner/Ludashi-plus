@@ -5,14 +5,14 @@
 <h1 align="center">Ludashi+</h1>
 
 <p align="center">
-  Winlator Ludashi 2.9 Bionic — with GOG, Epic Games, Amazon Games, and Steam stores built in.
+  Winlator Ludashi 3.0 Bionic — with GOG, Epic Games, Amazon Games, and Steam stores built in.
 </p>
 
 ---
 
-Ludashi+ is a patched build of [Winlator-Ludashi v2.9](https://github.com/StevenMXZ/Winlator-Ludashi) by StevenMXZ. It adds native GOG, Epic Games Store, Amazon Games, and Steam library browsing, downloading, and launching directly inside the app — no sideloading required.
+Ludashi+ is a feature-rich, enhanced build of [Winlator-Ludashi v3.0](https://github.com/StevenMXZ/Winlator-Ludashi) by StevenMXZ. All credit for the core app goes to him — this project layers additional store support, a polished install experience, and community-friendly defaults on top of his work without changing the underlying emulation engine.
 
-It uses a distinct package name (`com.winlator.cmod`) and can coexist with standard Winlator builds. Installing over the original Winlator-Ludashi is possible but **at your own risk** — different signing keys may cause issues. A clean uninstall of the original first is the safer option. Your Wine containers in external storage are preserved across reinstalls.
+It is signed with the same key as StevenMXZ's original release, meaning it can update directly over his release and vice versa. Whether you do a fresh install or update over an existing installation is entirely your decision. **As always, use at your own risk.**
 
 ---
 
@@ -33,10 +33,18 @@ It uses a distinct package name (`com.winlator.cmod`) and can coexist with stand
   - Logout support
   - Auto-rotate on library and game detail screens
 
+### First-Install Experience
+
+- Full-screen branded splash screen on first launch — replaces the plain progress dialog
+- Progress bar and percentage counter during asset extraction
+- Proceed button appears at 100%; tapping requests storage permission then opens the app
+- Already-installed fast-path: no splash shown on subsequent launches
+
 ### UI / App
 - App label: **Ludashi+**
 - Custom icon — distinct from base Ludashi so both can coexist on the same device
 - Store section in the side menu (GOG / Epic / Amazon / Steam tabs)
+- Banners Turnip Drivers included as the first driver repository entry
 
 ---
 
@@ -49,8 +57,8 @@ The Ludashi build uses the package name `com.winlator.cmod` to mimic Ludashi, a 
 ## Installation
 
 1. Download the latest APK from the [Releases](https://github.com/The412Banner/Ludashi-plus/releases) page.
-2. If you have the original Winlator-Ludashi installed: a clean uninstall first is recommended (your external-storage containers are safe). Installing over the original is possible but at your own risk due to different signing keys.
-3. Install the APK and launch. Wait for the first-run setup to finish.
+2. Install directly over StevenMXZ's original Winlator-Ludashi or as a fresh install — both work. Your Wine containers in external storage are preserved either way.
+3. Launch the app and wait for the first-run setup to complete.
 4. To use a game store: open the side menu → tap GOG, Epic, Amazon, or Steam → log in.
 
 ---
@@ -73,8 +81,10 @@ The Ludashi build uses the package name `com.winlator.cmod` to mimic Ludashi, a 
 Updated components (`wcps`) for improved compatibility and performance, plus new drivers:
 
 - **Winlator Components (FEXCore, Box64/Box86, DXVK, etc.):**
+  - Recommended: [Xnick417x's community content list](https://raw.githubusercontent.com/Xnick417x/Winlator-Bionic-Nightly-wcp/refs/heads/main/content.json) — add this URL under **App Settings** in the app
   - [StevenMXZ's Winlator-Contents Repository](https://github.com/StevenMXZ/Winlator-Contents)
 - **Adreno GPU Drivers (Turnip):**
+  - [Banners Turnip Drivers](https://github.com/The412Banner/Banners-Turnip) — included in the app's driver repository list
   - [Kimchi's AdrenoToolsDrivers Releases](https://github.com/K11MCH1/AdrenoToolsDrivers/releases)
 
 ---
