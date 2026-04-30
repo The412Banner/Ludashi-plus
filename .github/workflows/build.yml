@@ -603,16 +603,16 @@ jobs:
             unzip -l rebuilt-unsigned.apk | grep 'res/drawable/ab_\|animated_background\|animated_gear' | wc -l
           fi
 
-      - name: Inject classes17.dex (Java stores — GOG/Epic/Amazon)
+      - name: Inject classes16.dex (Java stores — GOG/Epic/Amazon)
         run: |
-          cp ext_java_dex/classes.dex classes17.dex
-          zip -j rebuilt-unsigned.apk classes17.dex
-          echo "classes17.dex injected ($(du -sh classes17.dex | cut -f1))"
+          cp ext_java_dex/classes.dex classes16.dex
+          zip -j rebuilt-unsigned.apk classes16.dex
+          echo "classes16.dex injected ($(du -sh classes16.dex | cut -f1))"
 
-      - name: Inject classes18.dex+ (JavaSteam library)
+      - name: Inject classes17.dex+ (JavaSteam library)
         run: |
           # d8 may have split JavaSteam into multiple DEX files
-          DEX_IDX=18
+          DEX_IDX=17
           for dex_file in $(ls ext_steam_lib_dex/classes*.dex | sort); do
             TARGET_NAME="classes${DEX_IDX}.dex"
             cp "$dex_file" "$TARGET_NAME"
