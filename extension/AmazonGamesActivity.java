@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import android.content.Intent;
 
 /**
  * Amazon Games library screen — UI mirrors GogGamesActivity.
