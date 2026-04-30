@@ -58,6 +58,8 @@ public class AmazonGamesActivity extends Activity {
     private static final int COLOR_CARD_BG  = 0xFF1A1410;   // dark brownish card background
     private static final int COLOR_HDR_BG   = 0xFF1A1410;
     private static final int COLOR_ROOT_BG  = 0xFF0D0D0D;
+    private static final int REQ_GAME_DETAIL  = 1001;
+    private static final int REQ_DOWNLOADS    = 1002;
 
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
 
@@ -1229,5 +1231,26 @@ public class AmazonGamesActivity extends Activity {
     private int dp(int v) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v,
                 getResources().getDisplayMetrics());
+    }
+    // ── Full-screen detail ────────────────────────────────────────────────────
+
+    private void openDetailScreen(AmazonGame game) {
+        Intent intent = new Intent(this, AmazonGameDetailActivity.class);
+        intent.putExtra("product_id",     game.productId);
+        intent.putExtra("entitlement_id", game.entitlementId);
+        intent.putExtra("title",          game.title);
+        intent.putExtra("developer",      game.developer);
+        intent.putExtra("publisher",      game.publisher);
+        intent.putExtra("art_url",        game.artUrl);
+        intent.putExtra("product_sku",    game.productSku);
+        startActivityForResult(intent, REQ_GAME_DETAIL);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_GAME_DETAIL && resultCode == AmazonGameDetailActivity.RESULT_REFRESH) {
+            applyFilter(searchBar != null ? searchBar.getText().toString() : "");
+        }
     }
 }
