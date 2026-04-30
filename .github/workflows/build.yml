@@ -686,15 +686,22 @@ jobs:
           APK_NAME="${{ steps.sign.outputs.apk_name }}"
           TAG="${GITHUB_REF_NAME}"
 
+          # Stable release for v* tags; prerelease for branch/dispatch builds
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            PRERELEASE_FLAG=""
+          else
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
           if gh release view "$TAG" &>/dev/null; then
             gh release upload "$TAG" "$APK_NAME" --clobber
-            gh release edit "$TAG" --draft=false --prerelease
+            gh release edit "$TAG" --draft=false $PRERELEASE_FLAG
             echo "Uploaded to existing release $TAG"
           else
             gh release create "$TAG" "$APK_NAME" \
               --title "Ludashi-plus $TAG" \
               --notes "Automated build — see PROGRESS_LOG.md for details." \
-              --prerelease
+              $PRERELEASE_FLAG
             echo "Created new release $TAG with $APK_NAME"
           fi
         env:
