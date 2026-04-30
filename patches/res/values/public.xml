@@ -2138,15 +2138,11 @@
     <public type="id" name="CBDisabledXInput" id="0x7f090052" />
     <public type="id" name="CBEnableBigPictureMode" id="0x7f090053" />
     <public type="id" name="CBEnableBox64Logs" id="0x7f090054" />
-    <public type="id" name="CBEnableCRTShader" id="0x7f090055" />
     <public type="id" name="CBEnableCustomApiKey" id="0x7f090056" />
     <public type="id" name="CBEnableDInput" id="0x7f090057" />
-    <public type="id" name="CBEnableFXAA" id="0x7f090058" />
     <public type="id" name="CBEnableFileProvider" id="0x7f090059" />
     <public type="id" name="CBEnableHaptics" id="0x7f09005a" />
-    <public type="id" name="CBEnableNTSCEffect" id="0x7f09005b" />
     <public type="id" name="CBEnableTimeout" id="0x7f09005c" />
-    <public type="id" name="CBEnableToonShader" id="0x7f09005d" />
     <public type="id" name="CBEnableWineDebug" id="0x7f09005e" />
     <public type="id" name="CBEnableXInput" id="0x7f09005f" />
     <public type="id" name="CBExclusiveXInput" id="0x7f090060" />
@@ -2162,7 +2158,6 @@
     <public type="id" name="CBInvertRightStickX" id="0x7f09006a" />
     <public type="id" name="CBInvertRightStickY" id="0x7f09006b" />
     <public type="id" name="CBLeftStickSquareDeadzone" id="0x7f09006c" />
-    <public type="id" name="CBNativeRendering" id="0x7f09006d" />
     <public type="id" name="CBOpenWithAndroidBrowser" id="0x7f09006e" />
     <public type="id" name="CBShareAndroidClipboard" id="0x7f09006f" />
     <public type="id" name="CBShowFPS" id="0x7f090070" />
@@ -2194,7 +2189,6 @@
     <public type="id" name="EnvVarsView" id="0x7f09008a" />
     <public type="id" name="FLContainer" id="0x7f09008b" />
     <public type="id" name="FLFragmentContainer" id="0x7f09008c" />
-    <public type="id" name="FLGraphContainer" id="0x7f09008d" />
     <public type="id" name="FLXServerDisplay" id="0x7f09008e" />
     <public type="id" name="FUNCTION" id="0x7f09008f" />
     <public type="id" name="FrameLayout" id="0x7f090090" />
@@ -2203,7 +2197,6 @@
     <public type="id" name="IVDriveIcon" id="0x7f090093" />
     <public type="id" name="IVIcon" id="0x7f090094" />
     <public type="id" name="ImageView" id="0x7f090095" />
-    <public type="id" name="LBLColorAdjustment" id="0x7f090096" />
     <public type="id" name="LBLSharpnessHeader" id="0x7f090097" />
     <public type="id" name="LLAnalogStickConfig" id="0x7f090098" />
     <public type="id" name="LLAsync" id="0x7f090099" />
@@ -2223,7 +2216,6 @@
     <public type="id" name="LLFrameGenOptions" id="0x7f0900a7" />
     <public type="id" name="LLIconList" id="0x7f0900a8" />
     <public type="id" name="LLInnerArea" id="0x7f0900a9" />
-    <public type="id" name="LLNativeOptions" id="0x7f0900aa" />
     <public type="id" name="LLProcessList" id="0x7f0900ab" />
     <public type="id" name="LLRangeOptions" id="0x7f0900ac" />
     <public type="id" name="LLShape" id="0x7f0900ad" />
@@ -2261,10 +2253,7 @@
     <public type="id" name="RecyclerViewFiles" id="0x7f0900cd" />
     <public type="id" name="SArch" id="0x7f0900ce" />
     <public type="id" name="SAudioDriver" id="0x7f0900cf" />
-    <public type="id" name="SBBrightness" id="0x7f0900d0" />
-    <public type="id" name="SBContrast" id="0x7f0900d1" />
     <public type="id" name="SBCursorSpeed" id="0x7f0900d2" />
-    <public type="id" name="SBGamma" id="0x7f0900d3" />
     <public type="id" name="SBHudAlpha" id="0x7f0900d4" />
     <public type="id" name="SBHudScale" id="0x7f0900d5" />
     <public type="id" name="SBLeftDeadzone" id="0x7f0900d6" />
@@ -2324,7 +2313,6 @@
     <public type="id" name="SPColorMode" id="0x7f09010c" />
     <public type="id" name="SPFrameGenFPS" id="0x7f09010d" />
     <public type="id" name="SPNativeFPS" id="0x7f09010e" />
-    <public type="id" name="SPRenderMode" id="0x7f09010f" />
     <public type="id" name="SPUpscalerMode" id="0x7f090110" />
     <public type="id" name="SPrimaryController" id="0x7f090111" />
     <public type="id" name="SProfile" id="0x7f090112" />
@@ -2351,10 +2339,6 @@
     <public type="id" name="SWRelativeMouse" id="0x7f090127" />
     <public type="id" name="SWineVersion" id="0x7f090128" />
     <public type="id" name="SYM" id="0x7f090129" />
-    <public type="id" name="Sep0" id="0x7f09012a" />
-    <public type="id" name="Sep1" id="0x7f09012b" />
-    <public type="id" name="Sep2" id="0x7f09012c" />
-    <public type="id" name="Sep3" id="0x7f09012d" />
     <public type="id" name="Spinner" id="0x7f09012e" />
     <public type="id" name="TOP_END" id="0x7f09012f" />
     <public type="id" name="TOP_START" id="0x7f090130" />
@@ -2394,17 +2378,14 @@
     <public type="id" name="TVFileName" id="0x7f090152" />
     <public type="id" name="TVFileSource" id="0x7f090153" />
     <public type="id" name="TVFileTarget" id="0x7f090154" />
-    <public type="id" name="TVFpsBig" id="0x7f090155" />
     <public type="id" name="TVGameController" id="0x7f090156" />
     <public type="id" name="TVGameTitle" id="0x7f090157" />
     <public type="id" name="TVGeneral" id="0x7f090158" />
     <public type="id" name="TVGlibcExpVersionFork" id="0x7f090159" />
-    <public type="id" name="TVGpuLoad" id="0x7f09015a" />
     <public type="id" name="TVGraphicsDriver" id="0x7f09015b" />
     <public type="id" name="TVGraphicsDriverLabel" id="0x7f09015c" />
     <public type="id" name="TVGraphicsDriverVersion" id="0x7f09015d" />
     <public type="id" name="TVGraphicsDriverVersionLabel" id="0x7f09015e" />
-    <public type="id" name="TVHardwareStats" id="0x7f09015f" />
     <public type="id" name="TVImageFs" id="0x7f090160" />
     <public type="id" name="TVLeftDeadzone" id="0x7f090161" />
     <public type="id" name="TVLeftSensitivity" id="0x7f090162" />
@@ -2421,7 +2402,6 @@
     <public type="id" name="TVPlaytime" id="0x7f09016d" />
     <public type="id" name="TVProfileName" id="0x7f09016e" />
     <public type="id" name="TVProgress" id="0x7f09016f" />
-    <public type="id" name="TVRenderer" id="0x7f090170" />
     <public type="id" name="TVRightDeadzone" id="0x7f090171" />
     <public type="id" name="TVRightSensitivity" id="0x7f090172" />
     <public type="id" name="TVScale" id="0x7f090173" />
@@ -2442,7 +2422,6 @@
     <public type="id" name="TVVersion" id="0x7f090182" />
     <public type="id" name="TVVersionCode" id="0x7f090183" />
     <public type="id" name="TVVersionName" id="0x7f090184" />
-    <public type="id" name="TVWattsTemp" id="0x7f090185" />
     <public type="id" name="TVWebpage" id="0x7f090186" />
     <public type="id" name="TVWinlatorPath" id="0x7f090187" />
     <public type="id" name="TVWrapperVersionLabel" id="0x7f090188" />
@@ -2676,7 +2655,6 @@
     <public type="id" name="main_menu_about" id="0x7f09026c" />
     <public type="id" name="main_menu_adrenotools_gpu_drivers" id="0x7f09026d" />
     <public type="id" name="main_menu_containers" id="0x7f09026e" />
-    <public type="id" name="main_menu_contents" id="0x7f09026f" />
     <public type="id" name="main_menu_file_manager" id="0x7f090270" />
     <public type="id" name="main_menu_input_controls" id="0x7f090271" />
     <public type="id" name="main_menu_settings" id="0x7f090272" />
@@ -3102,7 +3080,6 @@
     <public type="layout" name="extra_keys_config" id="0x7f0c0053" />
     <public type="layout" name="file_list_item" id="0x7f0c0054" />
     <public type="layout" name="file_manager_fragment" id="0x7f0c0055" />
-    <public type="layout" name="frame_rating" id="0x7f0c0056" />
     <public type="layout" name="graphics_driver_config_dialog" id="0x7f0c0057" />
     <public type="layout" name="image_frame" id="0x7f0c0058" />
     <public type="layout" name="image_picker_view" id="0x7f0c0059" />
@@ -3180,7 +3157,6 @@
     <public type="layout" name="preference_widget_switch_compat" id="0x7f0c00a2" />
     <public type="layout" name="preloader_dialog" id="0x7f0c00a3" />
     <public type="layout" name="process_info_list_item" id="0x7f0c00a4" />
-    <public type="layout" name="screen_effect_dialog" id="0x7f0c00a5" />
     <public type="layout" name="select_dialog_item_material" id="0x7f0c00a6" />
     <public type="layout" name="select_dialog_multichoice_material" id="0x7f0c00a7" />
     <public type="layout" name="select_dialog_singlechoice_material" id="0x7f0c00a8" />
