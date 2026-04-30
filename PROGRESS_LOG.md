@@ -1008,3 +1008,202 @@ From section 5.3 / 2.2:
 - Root cause: `ExecuteAsyncKt.kt` filename → Kotlin generates `ExecuteAsyncKtKt` → @file:JvmName forces correct `ExecuteAsyncKt`
 - classes22.dex now has correct class name — should resolve ClassNotFoundException at runtime
 - **Next step:** install this APK, try downloading a game, check debug log + logcat
+
+---
+
+## v3.0.0 — 3.0 branch porting session (2026-04-30)
+
+### Context
+StevenMXZ released Ludashi v3.0 on 2026-04-30 with a full Vulkan renderer rewrite,
+ContentManager restructure, and removal of the Contents tab. Branched `3.0` from `main`
+and ported all patches to the new base APK (`ludashi-bionic.apk` 505MB, uploaded to
+`base-apk-3.0` release on our repo).
+
+### 3.0 porting CI run table
+
+| Commit | Description | CI Run | Result |
+|---|---|---|---|
+| `da38758` | ci: switch base APK to Winlator-Ludashi v3.0 | — | ❌ 24 dead public.xml entries |
+| `269f502` | fix(3.0): remove dead public.xml entries dropped in v3.0 base | — | ❌ main_menu_contents still present |
+| `65d2353` | fix(3.0): remove main_menu_contents item | — | ❌ store IDs collide with v3.0 resources |
+| `7c58ebb` | fix(3.0): rebuild public.xml from v3.0 base + append store IDs | — | ❌ 118 ab_*.png declared but stripped |
+| `a7c2d90` | fix(3.0): rebase MainActivity.smali + public.xml on v3.0 resources | — | ❌ DEX gap at classes16 |
+| `(gap fix)` | fix: inject at classes16.dex (v3.0 base has classes.dex–classes15) | 25169474738 | ✅ **success** |
+
+**Key v3.0 resource ID facts:**
+- Our store IDs: GOG=`0x7f090392`, Epic=`0x7f090391`, Amazon=`0x7f090390`, Steam=`0x7f090393`
+- packed-switch base now at `0x7f090275` (was `0x7f09026c` in v2.9)
+
+### Post-green additions (same session)
+
+| Commit | Description | CI Run | Result |
+|---|---|---|---|
+| `4a5345e` | feat: full-screen splash install screen (SplashInstallActivity) | 25171129287 | ✅ success |
+| `e38e262` | feat: attribution subtitle ("Based off StevenMXZ Ludashi 3.0") | — | — |
+| `4aefaa0` | feat: Xnick417x contents URL + Banners Turnip repo + splash cyan | — | — |
+| `1eb5e43` | docs: update README for v3.0.0 | — | — |
+
+### v3.0.0 stable release
+- Tag: `v3.0.0` pushed 2026-04-30
+- Branch `3.0` set as default GitHub branch
+- CI workflow updated: `v*` tags → stable release; non-tag builds → artifact only
+- Pre-release mode active after this point
+
+### CI workflow updates (same session)
+| Commit | Description |
+|---|---|
+| `0a8defb` | ci: branch builds produce artifacts only, no releases |
+| `d2a7931` | ci: stable release for v* tags, prerelease for branch builds |
+| `87f9eda` | ci: skip release and variants for pre-release tags (`-pre` in name) |
+
+---
+
+## store-update branch — GOG/Epic/Amazon store enhancements (2026-04-30)
+
+### Goal
+Port GOG/Epic/Amazon game detail screens, cloud save managers, and Epic free games
+from BannerHub. Replace BH-specific `BhDownloadService` (foreground service) with a
+new `StoreDownloadQueue` in-process singleton. Add DownloadsActivity accessible from
+main menu.
+
+### New files added
+- `extension/GogGameDetailActivity.java` — ported + patched (BhDownloadService → StoreDownloadQueue, launch → GogLaunchHelper.addToLauncher)
+- `extension/GogCloudSaveManager.java` — ported (package rename only, clientId falls back to galaxyToken)
+- `extension/EpicGameDetailActivity.java` — ported + patched (pendingLaunchExe → LudashiLaunchBridge.addToLauncher)
+- `extension/EpicCloudSaveManager.java` — ported (package rename only)
+- `extension/EpicFreeGamesActivity.java` — ported (package rename only, fully standalone)
+- `extension/AmazonGameDetailActivity.java` — ported + patched
+- `extension/StoreDownloadQueue.java` — NEW: in-process download singleton replacing BhDownloadService
+- `extension/DownloadsActivity.java` — NEW: polls StoreDownloadQueue every 1s, shows progress cards
+
+### Files modified
+- `extension/GogGamesActivity.java` — added HashMap import, gogDlcBuffer field, REQ_GAME_DETAIL/REQ_DOWNLOADS constants, openDetailScreen(), onActivityResult()
+- `extension/EpicGamesActivity.java` — same additions
+- `extension/AmazonGamesActivity.java` — same additions
+- `patches/res/menu/main_menu.xml` — added Downloads item to group_game_stores
+- `patches/res/values/public.xml` — added `main_menu_downloads` ID at `0x7f090394`
+- `patches/res/values/ludashi_plus_ids.xml` — added `main_menu_downloads` item definition
+- `patches/AndroidManifest.xml` — declared all 5 new activities
+- `patches/smali_classes8/.../MainActivity.smali` — added if-eq for `0x7f090394` → DownloadsActivity
+
+### CI run table (store-update)
+
+| Commit | Description | CI Run | Result |
+|---|---|---|---|
+| `(initial port commits)` | All 6 new files + 3 modified GamesActivity | 25180073813 | ❌ missing Intent import × 3, startForegroundService undef, fetchInstallSizeBytes undef, FolderPickerActivity undef, getOrFetchClientId undef |
+| `a57d13d/0085aae/c11aad9` | fix: add missing Intent import to all 3 GamesActivity | — | — |
+| `fa5c728` | fix: stub getOrFetchClientId → null (galaxyToken fallback) | — | — |
+| `a9c3a2a/1073794/481d501` | fix: remove startForegroundService; stub fetchInstallSizeBytes → -1L; FolderPickerActivity → no-op | 25180621434 | ❌ aapt: public symbol id/main_menu_downloads not defined |
+| `e1683da` | fix: add main_menu_downloads to ludashi_plus_ids.xml | 25181177753 | ✅ **success** |
+
+### Post-green enhancements (same session)
+
+| Commit | Description | CI Run | Result |
+|---|---|---|---|
+| `72c9a6f` | feat: add download notifications + wire detail screens to card taps | 25183066096 | ✅ **success** |
+
+**Detail screen wiring:** All 3 GamesActivity files — list card (second tap when expanded) and grid tile (long press) now call `openDetailScreen(game)` instead of the old inline AlertDialog.
+
+**Download notifications:** `StoreDownloadQueue` now posts an ongoing Android progress notification for each download. Shows store + title, progress bar, Cancel action button. Throttled per % change. On finish: dismissed (cancelled), static error card, or static complete card. BroadcastReceiver registered dynamically on first download start, unregistered when all downloads finish. Uses `RECEIVER_NOT_EXPORTED` on API 33+.
+
+### Current state (2026-04-30)
+- Branch: `store-update`, latest commit: `72c9a6f`
+- CI: ✅ green (run 25183066096)
+- Ready to merge into `3.0` when user confirms device test
+
+### Pre-push — fix: route all list/grid downloads through StoreDownloadQueue for notifications (2026-04-30)
+
+**Problem:** Android progress notifications only appeared when installing from GameDetailActivity,
+not from the games list. Root cause: all 7 list/grid Install buttons (GOG list, GOG grid, GOG
+custom-install dialog, Epic list, Epic grid, Amazon list, Amazon grid) called
+`GogDownloadManager.startDownload()` / `startEpicDownload()` / `startAmazonDownload()` directly,
+bypassing `StoreDownloadQueue` entirely.
+
+**Fix:** All 7 sites now route through `StoreDownloadQueue.startGog/Epic/Amazon()`. The in-place
+UI (progress bar, status text, checkmark) is delivered via `StoreDownloadQueue.addListener(dlKey, ...)`.
+Cancel buttons call `StoreDownloadQueue.cancel() + removeListener()`. Each site gets a unique dlKey:
+- `gog-{gameId}-list`, `gog-{gameId}-grid`, `gog-{gameId}-custom`
+- `epic-{appName}-list`, `epic-{appName}-grid`
+- `amz-{productId}-list`, `amz-{productId}-grid`
+
+Files changed: GogGamesActivity.java (3 sites), EpicGamesActivity.java (2 sites),
+AmazonGamesActivity.java (2 sites)
+
+CI pending.
+
+### Post-CI — fix: route all list/grid installs through StoreDownloadQueue (2026-04-30)
+- Commit: `ba5fe10` | CI run: 25183887535 ✅ success
+- All 7 download sites now go through StoreDownloadQueue → notifications fire for every install path
+- store-update branch: latest commit `ba5fe10`, all CI green
+
+### Pre-push — feat: Downloads header button + in-progress restore on card build (2026-04-30)
+
+**Downloads button:** Add "⬇" button to the header row of GogGamesActivity, EpicGamesActivity,
+AmazonGamesActivity. Taps open DownloadsActivity via startActivityForResult(REQ_DOWNLOADS).
+Same styling as existing header buttons.
+
+**Progress restore:** When addGameCard() / makeGridTile() builds a card, check
+StoreDownloadQueue.getEntry(dlKey) — if a download is active for that game, immediately
+restore the in-progress UI (expand section visible, Cancel button, live progress bar/status)
+and re-register a fresh DownloadListener. Covers all 7 download paths (GOG list/grid/custom,
+Epic list/grid, Amazon list/grid). Requires adding getEntry(dlKey) to StoreDownloadQueue.
+
+CI pending.
+
+### Post-CI — feat: Downloads button + in-progress restore (2026-04-30)
+- Commit: `6702f07` | CI run: 25185022012 ✅ success
+- ⬇ Downloads button added to GOG/Epic/Amazon headers → opens DownloadsActivity
+- All 6 list/grid card-build sites check StoreDownloadQueue.getEntry() on rebuild
+- Active downloads immediately show expand section, Cancel button, live progress bar + status
+- StoreDownloadQueue.getEntry(String) added for lookup
+- store-update branch: latest commit `6702f07`, all CI green
+
+### Pre-push — fix: restore in-progress state in all three GameDetailActivity screens (2026-04-30)
+**Problem:** Opening a game's detail page while a download is running (started from the list/grid) showed
+a stale Install button instead of the Cancel+progress UI. Each detail activity only checked its own
+`"store_" + id` dlKey in `onResume()`, but list/grid downloads use `"store-" + id + "-list/-grid"` keys.
+
+**Fix:**
+- `StoreDownloadQueue.findActiveEntry(String... dlKeys)` added — checks multiple keys, returns first active entry
+- `GogGameDetailActivity` (already committed): `activeDlKey` field + `onResume()` uses `findActiveEntry("gog_…", "gog-…-list", "gog-…-grid", "gog-…-custom")` + `onPause()` uses activeDlKey + `startInstall()` sets activeDlKey + `onBackPressed()` cancels
+- `EpicGameDetailActivity`: same treatment — `findActiveEntry("epic_…", "epic-…-list", "epic-…-grid")` + `activeDlKey = dlKey` added to `startInstall()`
+- `AmazonGameDetailActivity`: same treatment — `findActiveEntry("amazon_…", "amz-…-list", "amz-…-grid")` + activeDlKey + `onBackPressed()` now cancels (was missing)
+
+Result: opening any game detail page while it is downloading (from any source) immediately shows
+progress bar + current %, Cancel button, and live listener updates.
+
+### Post-CI — fix: restore in-progress state in detail activity screens (2026-04-30)
+- Commit: `33701df` | CI run: 25185762756 ✅ success
+- All 3 GameDetailActivity screens (GOG/Epic/Amazon) now restore active download state on open
+- findActiveEntry() bridges list/grid dlKey variants to the detail screen
+- store-update branch: latest commit `33701df`, all CI green
+
+### Post-push — fix: cancel broken for all stores (2026-04-30)
+- Commit: `61df39d` | CI run: 25188067967 ✅ success
+- store-update branch: latest commit `61df39d`, all CI green
+
+### Pre-push — fix: cancel broken for all stores (2026-04-30)
+**Root cause 1 — GOG cancel completely non-functional:**
+`StoreDownloadQueue.startGog()` discarded the cancel `Runnable` returned by
+`GogDownloadManager.startDownload()` and stored a separate `AtomicBoolean` in `cancelFlags`.
+GOG's download thread has its own internal `AtomicBoolean` that was never connected to
+the one in `cancelFlags` — the thread never saw the cancel signal.
+
+**Root cause 2 — UI never resets after cancel on all stores (list/grid):**
+The cancel Runnable in list/grid cards called `StoreDownloadQueue.removeListener(dlKey)`
+BEFORE `onCancelled()` fired. When the thread eventually completed cancellation and
+`finish()` called `l.onCancelled()`, the listener was already gone → button stayed stuck
+as "Cancel".
+
+**Fixes:**
+- `StoreDownloadQueue`: replace `cancelFlags: ConcurrentHashMap<String, AtomicBoolean>` with
+  `cancelActions: ConcurrentHashMap<String, Runnable>`; `cancel()` now calls the Runnable
+- `finish()`: `if (!entry.active) return;` guard prevents double-call
+- `startGog()`: stores the Runnable returned by `GogDownloadManager.startDownload()`; GOG cancel
+  now correctly sets the internal `cancelled` flag, deletes partial files, and fires `onCancelled()`
+- `startEpic()` / `startAmazon()`: cancel action = `cancelled.set(true)` + immediate `finish()`
+  (for responsive UI reset); thread detects cancelled and deletes partial install dir + clears prefs
+- `GogDownloadManager.doDownload()`: after `runGen2()`/`runGen1()` return non-null + cancelled →
+  silent return (no `cb.onError()` call), preventing double-callback with the cancel Runnable
+- `GogGamesActivity`, `EpicGamesActivity`, `AmazonGamesActivity`: removed `removeListener()` from
+  all cancel Runnables — `onCancelled()` listener handles UI reset and self-removal

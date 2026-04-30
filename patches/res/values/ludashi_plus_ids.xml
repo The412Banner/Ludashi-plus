@@ -5,6 +5,7 @@
     <item type="id" name="main_menu_epic"/>
     <item type="id" name="main_menu_amazon"/>
     <item type="id" name="main_menu_steam"/>
+    <item type="id" name="main_menu_downloads"/>
     <item type="id" name="splash_logo"/>
     <item type="id" name="splash_status_text"/>
     <item type="id" name="splash_progress_bar"/>

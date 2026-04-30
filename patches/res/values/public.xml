@@ -2975,6 +2975,7 @@
     <public type="id" name="main_menu_epic" id="0x7f090391" />
     <public type="id" name="main_menu_gog" id="0x7f090392" />
     <public type="id" name="main_menu_steam" id="0x7f090393" />
+    <public type="id" name="main_menu_downloads" id="0x7f090394" />
     <public type="integer" name="abc_config_activityDefaultDur" id="0x7f0a0000" />
     <public type="integer" name="abc_config_activityShortDur" id="0x7f0a0001" />
     <public type="integer" name="app_bar_elevation_anim_duration" id="0x7f0a0002" />

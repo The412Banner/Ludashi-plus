@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import android.content.Intent;
 
 /**
  * Epic Games library screen — mirrors AmazonGamesActivity structure.
@@ -71,6 +72,8 @@ public class EpicGamesActivity extends Activity {
     private static final int COLOR_CARD_BG = 0xFF0F1117;  // dark card background
     private static final int COLOR_HDR_BG  = 0xFF0F1117;
     private static final int COLOR_ROOT_BG = 0xFF0D0D0D;
+    private static final int REQ_GAME_DETAIL  = 1001;
+    private static final int REQ_DOWNLOADS    = 1002;
 
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
 
@@ -182,6 +185,22 @@ public class EpicGamesActivity extends Activity {
         header.addView(refreshBtn, new LinearLayout.LayoutParams(-2, dp(40)));
 
         root.addView(header, new LinearLayout.LayoutParams(-1, -2));
+        Button dlBtn = new Button(this);
+        dlBtn.setText("\u2b07");
+        dlBtn.setTextColor(0xFFFFFFFF);
+        GradientDrawable dlBtnBg = new GradientDrawable();
+        dlBtnBg.setColor(0xFF333333);
+        dlBtnBg.setCornerRadius(dp(4));
+        dlBtn.setBackground(dlBtnBg);
+        dlBtn.setTextSize(16f);
+        dlBtn.setPadding(dp(12), 0, dp(12), 0);
+        dlBtn.setOnFocusChangeListener((v, hasFocus) -> {
+            dlBtnBg.setColor(hasFocus ? 0xFF555555 : 0xFF333333);
+            dlBtnBg.setStroke(hasFocus ? dp(2) : 0, hasFocus ? 0xFFFFD700 : 0x00000000);
+        });
+        dlBtn.setOnClickListener(v -> startActivityForResult(
+                new Intent(this, DownloadsActivity.class), REQ_DOWNLOADS));
+        header.addView(dlBtn, new LinearLayout.LayoutParams(-2, dp(40)));
 
         // Search bar
         searchBar = new EditText(this);
@@ -308,6 +327,14 @@ public class EpicGamesActivity extends Activity {
             Log.e(TAG, "syncLibrary error", e);
             setSync("Error: " + e.getMessage());
             enableRefresh();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!allGames.isEmpty()) {
+            applyFilter(searchBar != null ? searchBar.getText().toString() : "");
         }
     }
 
@@ -529,7 +556,8 @@ public class EpicGamesActivity extends Activity {
                 pctTV.setText("0%");
                 pctTV.setVisibility(View.VISIBLE);
 
-                cancelRef[0] = startEpicDownload(game, new DownloadCallback() {
+                String dlKeyL = "epic-" + game.appName + "-list";
+                StoreDownloadQueue.addListener(dlKeyL, new StoreDownloadQueue.DownloadListener() {
                     @Override public void onProgress(String msg, int pct) {
                         uiHandler.post(() -> {
                             statusTV.setText(msg);
@@ -574,11 +602,10 @@ public class EpicGamesActivity extends Activity {
                             actionBtn.setEnabled(true);
                         });
                     }
-                    @Override public void onSelectExe(List<String> candidates,
-                                                       java.util.function.Consumer<String> onSelected) {
-                        showExePicker(candidates, onSelected);
-                    }
                 });
+                StoreDownloadQueue.startEpic(this, game, dlKeyL);
+                cancelRef[0] = () ->
+                    StoreDownloadQueue.cancel(EpicGamesActivity.this, dlKeyL);
             });
         });
 
@@ -593,12 +620,7 @@ public class EpicGamesActivity extends Activity {
 
         card.setOnClickListener(v -> {
             if (expandSection.getVisibility() == View.VISIBLE) {
-                showDetailDialog(game, checkmark, actionBtn, () -> {
-                    checkmark.setVisibility(View.GONE);
-                    collapsedCheckTV.setVisibility(View.GONE);
-                    actionBtn.setText("Install");
-                    actionBtn.setBackgroundColor(COLOR_ACCENT);
-                });
+                openDetailScreen(game);
             } else {
                 if (expandedSection != null) {
                     expandedSection.setVisibility(View.GONE);
@@ -610,6 +632,75 @@ public class EpicGamesActivity extends Activity {
                 expandedArrow   = arrowTV;
             }
         });
+
+        // Restore in-progress UI if a download is already running for this game
+        {
+            StoreDownloadQueue.DownloadEntry _eR = StoreDownloadQueue.findActiveEntry(
+                    "epic-" + game.appName + "-list",
+                    "epic-" + game.appName + "-grid",
+                    "epic_" + game.appName);
+            if (_eR != null) {
+                final String _dlKeyR = _eR.dlKey;
+                expandSection.setVisibility(View.VISIBLE);
+                arrowTV.setText("▲");
+                expandedSection = expandSection;
+                expandedArrow   = arrowTV;
+                actionBtn.setText("Cancel");
+                actionBtn.setBackgroundColor(0xFFCC3333);
+                progressBar.setVisibility(View.VISIBLE);
+                progressBar.setProgress(_eR.percent);
+                pctTV.setText(_eR.percent + "%");
+                pctTV.setVisibility(View.VISIBLE);
+                statusTV.setVisibility(View.VISIBLE);
+                statusTV.setText(_eR.status);
+                StoreDownloadQueue.addListener(_dlKeyR, new StoreDownloadQueue.DownloadListener() {
+                    @Override public void onProgress(String msg, int pct) {
+                        uiHandler.post(() -> {
+                            statusTV.setText(msg);
+                            progressBar.setProgress(pct);
+                            pctTV.setText(pct + "%");
+                        });
+                    }
+                    @Override public void onComplete(String exePath) {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            progressBar.setProgress(100);
+                            pctTV.setVisibility(View.GONE);
+                            checkmark.setVisibility(View.VISIBLE);
+                            collapsedCheckTV.setVisibility(View.VISIBLE);
+                            statusTV.setText("Installed");
+                            actionBtn.setText("Add to Launcher");
+                            actionBtn.setBackgroundColor(COLOR_ADD);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                    @Override public void onError(String msg) {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            pctTV.setVisibility(View.GONE);
+                            statusTV.setText("Error: " + msg);
+                            actionBtn.setText("Install");
+                            actionBtn.setBackgroundColor(COLOR_ACCENT);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                    @Override public void onCancelled() {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            progressBar.setProgress(0);
+                            progressBar.setVisibility(View.GONE);
+                            pctTV.setVisibility(View.GONE);
+                            statusTV.setText("");
+                            actionBtn.setText("Install");
+                            actionBtn.setBackgroundColor(COLOR_ACCENT);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                });
+                cancelRef[0] = () ->
+                    StoreDownloadQueue.cancel(EpicGamesActivity.this, _dlKeyR);
+            }
+        }
 
         gameListLayout.addView(card, cardLp);
     }
@@ -749,7 +840,8 @@ public class EpicGamesActivity extends Activity {
                 actionBtn.setBackgroundColor(COLOR_CANCEL);
                 progressBar.setVisibility(View.VISIBLE);
 
-                cancelRef[0] = startEpicDownload(game, new DownloadCallback() {
+                String dlKeyG = "epic-" + game.appName + "-grid";
+                StoreDownloadQueue.addListener(dlKeyG, new StoreDownloadQueue.DownloadListener() {
                     @Override public void onProgress(String msg, int pct) {
                         uiHandler.post(() -> progressBar.setProgress(pct));
                     }
@@ -785,11 +877,10 @@ public class EpicGamesActivity extends Activity {
                             actionBtn.setEnabled(true);
                         });
                     }
-                    @Override public void onSelectExe(List<String> candidates,
-                                                       java.util.function.Consumer<String> onSelected) {
-                        showExePicker(candidates, onSelected);
-                    }
                 });
+                StoreDownloadQueue.startEpic(this, game, dlKeyG);
+                cancelRef[0] = () ->
+                    StoreDownloadQueue.cancel(EpicGamesActivity.this, dlKeyG);
             });
         });
 
@@ -805,12 +896,61 @@ public class EpicGamesActivity extends Activity {
             }
         });
 
+
+        // Restore in-progress UI if a download is already running for this game
+        {
+            StoreDownloadQueue.DownloadEntry _eRG = StoreDownloadQueue.findActiveEntry(
+                    "epic-" + game.appName + "-list",
+                    "epic-" + game.appName + "-grid",
+                    "epic_" + game.appName);
+            if (_eRG != null) {
+                final String _dlKeyRG = _eRG.dlKey;
+                actionRow.setVisibility(View.VISIBLE);
+                actionBtn.setText("Cancel");
+                actionBtn.setBackgroundColor(0xFFCC3333);
+                progressBar.setVisibility(View.VISIBLE);
+                progressBar.setProgress(_eRG.percent);
+                StoreDownloadQueue.addListener(_dlKeyRG, new StoreDownloadQueue.DownloadListener() {
+                    @Override public void onProgress(String msg, int pct) {
+                        uiHandler.post(() -> progressBar.setProgress(pct));
+                    }
+                    @Override public void onComplete(String exePath) {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            progressBar.setProgress(100);
+                            progressBar.setVisibility(View.GONE);
+                            checkTV.setVisibility(View.VISIBLE);
+                            actionBtn.setText("Add to Launcher");
+                            actionBtn.setBackgroundColor(COLOR_ADD);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                    @Override public void onError(String msg) {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            progressBar.setVisibility(View.GONE);
+                            actionBtn.setText("Install");
+                            actionBtn.setBackgroundColor(COLOR_ACCENT);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                    @Override public void onCancelled() {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            progressBar.setProgress(0);
+                            progressBar.setVisibility(View.GONE);
+                            actionBtn.setText("Install");
+                            actionBtn.setBackgroundColor(COLOR_ACCENT);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                });
+                cancelRef[0] = () ->
+                    StoreDownloadQueue.cancel(EpicGamesActivity.this, _dlKeyRG);
+            }
+        }
         tile.setOnLongClickListener(v -> {
-            showDetailDialog(game, checkTV, actionBtn, () -> {
-                checkTV.setVisibility(View.GONE);
-                actionBtn.setText("Install");
-                actionBtn.setBackgroundColor(COLOR_ACCENT);
-            });
+            openDetailScreen(game);
             return true;
         });
 
@@ -1224,5 +1364,26 @@ public class EpicGamesActivity extends Activity {
     private int dp(int v) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v,
                 getResources().getDisplayMetrics());
+    }
+    // ── Full-screen detail ────────────────────────────────────────────────────
+
+    private void openDetailScreen(EpicGame game) {
+        Intent intent = new Intent(this, EpicGameDetailActivity.class);
+        intent.putExtra("app_name",        game.appName);
+        intent.putExtra("title",           game.title);
+        intent.putExtra("description",     game.description);
+        intent.putExtra("developer",       game.developer);
+        intent.putExtra("art_cover",       game.artCover);
+        intent.putExtra("namespace",       game.namespace);
+        intent.putExtra("catalog_item_id", game.catalogItemId);
+        startActivityForResult(intent, REQ_GAME_DETAIL);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_GAME_DETAIL && resultCode == EpicGameDetailActivity.RESULT_REFRESH) {
+            applyFilter(searchBar != null ? searchBar.getText().toString() : "");
+        }
     }
 }
