@@ -53,6 +53,7 @@ public class EpicGameDetailActivity extends Activity {
     private ProgressBar progressBar;
     private TextView progressLabel;
     private Runnable cancelDownload;
+    private String activeDlKey;
 
     // Updates section views
     private TextView updateStatusTV;
@@ -315,23 +316,30 @@ public class EpicGameDetailActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (appName == null) return;
-        String dlKey = "epic_" + appName;
-        if (StoreDownloadQueue.isActive(dlKey)) {
+        StoreDownloadQueue.DownloadEntry active = StoreDownloadQueue.findActiveEntry(
+                "epic_" + appName,
+                "epic-" + appName + "-list",
+                "epic-" + appName + "-grid");
+        if (active != null) {
+            activeDlKey = active.dlKey;
             installBtn.setText("Cancel");
             installBtn.setBackgroundColor(0xFFCC3333);
             progressBar.setVisibility(View.VISIBLE);
+            progressBar.setProgress(active.percent);
             progressLabel.setVisibility(View.VISIBLE);
+            progressLabel.setText(active.status);
             launchBtn.setEnabled(false);
             setExeBtn.setEnabled(false);
-            cancelDownload = () -> StoreDownloadQueue.cancel(this, dlKey);
-            attachDownloadListener(dlKey);
+            cancelDownload = () -> StoreDownloadQueue.cancel(this, activeDlKey);
+            attachDownloadListener(activeDlKey);
         }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (appName != null) StoreDownloadQueue.removeListener("epic_" + appName);
+        if (activeDlKey != null) StoreDownloadQueue.removeListener(activeDlKey);
+        else if (appName != null) StoreDownloadQueue.removeListener("epic_" + appName);
     }
 
     // ── Install ───────────────────────────────────────────────────────────────
@@ -350,6 +358,7 @@ public class EpicGameDetailActivity extends Activity {
         launchBtn.setEnabled(false);
         setExeBtn.setEnabled(false);
 
+        activeDlKey = dlKey;
         cancelDownload = () -> StoreDownloadQueue.cancel(this, dlKey);
         EpicGame _dlGame = new EpicGame();
         _dlGame.appName       = appName != null ? appName : "";

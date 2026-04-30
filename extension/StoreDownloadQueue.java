@@ -88,6 +88,15 @@ public class StoreDownloadQueue {
         return entries.get(dlKey);
     }
 
+    /** Returns the first active entry matching any of the given keys, or null. */
+    public static DownloadEntry findActiveEntry(String... dlKeys) {
+        for (String key : dlKeys) {
+            DownloadEntry e = entries.get(key);
+            if (e != null && e.active) return e;
+        }
+        return null;
+    }
+
     // ── GOG ──────────────────────────────────────────────────────────────────
 
     public static void startGog(Context ctx, GogGame game, String dlKey) {

@@ -64,6 +64,7 @@ public class GogGameDetailActivity extends Activity {
     private ProgressBar progressBar;
     private TextView progressLabel;
     private Runnable cancelDownload;
+    private String activeDlKey;
 
     // Updates section views
     private TextView updateStatusTV;
@@ -101,23 +102,31 @@ public class GogGameDetailActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (gameId == null) return;
-        String dlKey = "gog_" + gameId;
-        if (StoreDownloadQueue.isActive(dlKey)) {
+        StoreDownloadQueue.DownloadEntry active = StoreDownloadQueue.findActiveEntry(
+                "gog_" + gameId,
+                "gog-" + gameId + "-list",
+                "gog-" + gameId + "-grid",
+                "gog-" + gameId + "-custom");
+        if (active != null) {
+            activeDlKey = active.dlKey;
             installBtn.setText("Cancel");
             installBtn.setBackgroundColor(0xFFCC3333);
             progressBar.setVisibility(View.VISIBLE);
+            progressBar.setProgress(active.percent);
             progressLabel.setVisibility(View.VISIBLE);
+            progressLabel.setText(active.status);
             launchBtn.setEnabled(false);
             setExeBtn.setEnabled(false);
-            cancelDownload = () -> StoreDownloadQueue.cancel(this, dlKey);
-            attachDownloadListener(dlKey);
+            cancelDownload = () -> StoreDownloadQueue.cancel(this, activeDlKey);
+            attachDownloadListener(activeDlKey);
         }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (gameId != null) StoreDownloadQueue.removeListener("gog_" + gameId);
+        if (activeDlKey != null) StoreDownloadQueue.removeListener(activeDlKey);
+        else if (gameId != null) StoreDownloadQueue.removeListener("gog_" + gameId);
     }
 
     // ── UI ────────────────────────────────────────────────────────────────────
@@ -402,6 +411,7 @@ public class GogGameDetailActivity extends Activity {
         launchBtn.setEnabled(false);
         setExeBtn.setEnabled(false);
 
+        activeDlKey = dlKey;
         cancelDownload = () -> StoreDownloadQueue.cancel(this, dlKey);
         StoreDownloadQueue.startGog(this, makeGogGame(), dlKey);
         attachDownloadListener(dlKey);

@@ -51,6 +51,7 @@ public class AmazonGameDetailActivity extends Activity {
     private ProgressBar progressBar;
     private TextView progressLabel;
     private Runnable cancelDownload;
+    private String activeDlKey;
 
     // Updates section views
     private TextView updateStatusTV;
@@ -76,6 +77,7 @@ public class AmazonGameDetailActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        if (cancelDownload != null) cancelDownload.run();
         super.onBackPressed();
     }
 
@@ -83,23 +85,30 @@ public class AmazonGameDetailActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (productId == null) return;
-        String dlKey = "amazon_" + productId;
-        if (StoreDownloadQueue.isActive(dlKey)) {
+        StoreDownloadQueue.DownloadEntry active = StoreDownloadQueue.findActiveEntry(
+                "amazon_" + productId,
+                "amz-" + productId + "-list",
+                "amz-" + productId + "-grid");
+        if (active != null) {
+            activeDlKey = active.dlKey;
             installBtn.setText("Cancel");
             installBtn.setBackgroundColor(0xFFCC3333);
             progressBar.setVisibility(View.VISIBLE);
+            progressBar.setProgress(active.percent);
             progressLabel.setVisibility(View.VISIBLE);
+            progressLabel.setText(active.status);
             launchBtn.setEnabled(false);
             setExeBtn.setEnabled(false);
-            cancelDownload = () -> StoreDownloadQueue.cancel(this, dlKey);
-            attachDownloadListener(dlKey);
+            cancelDownload = () -> StoreDownloadQueue.cancel(this, activeDlKey);
+            attachDownloadListener(activeDlKey);
         }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (productId != null) StoreDownloadQueue.removeListener("amazon_" + productId);
+        if (activeDlKey != null) StoreDownloadQueue.removeListener(activeDlKey);
+        else if (productId != null) StoreDownloadQueue.removeListener("amazon_" + productId);
     }
 
     // ── UI ────────────────────────────────────────────────────────────────────
@@ -329,6 +338,7 @@ public class AmazonGameDetailActivity extends Activity {
         launchBtn.setEnabled(false);
         setExeBtn.setEnabled(false);
 
+        activeDlKey = dlKey;
         cancelDownload = () -> StoreDownloadQueue.cancel(this, dlKey);
         AmazonGame _dlGame = new AmazonGame();
         _dlGame.productId     = productId != null ? productId : "";

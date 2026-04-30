@@ -1157,3 +1157,17 @@ CI pending.
 - Active downloads immediately show expand section, Cancel button, live progress bar + status
 - StoreDownloadQueue.getEntry(String) added for lookup
 - store-update branch: latest commit `6702f07`, all CI green
+
+### Pre-push — fix: restore in-progress state in all three GameDetailActivity screens (2026-04-30)
+**Problem:** Opening a game's detail page while a download is running (started from the list/grid) showed
+a stale Install button instead of the Cancel+progress UI. Each detail activity only checked its own
+`"store_" + id` dlKey in `onResume()`, but list/grid downloads use `"store-" + id + "-list/-grid"` keys.
+
+**Fix:**
+- `StoreDownloadQueue.findActiveEntry(String... dlKeys)` added — checks multiple keys, returns first active entry
+- `GogGameDetailActivity` (already committed): `activeDlKey` field + `onResume()` uses `findActiveEntry("gog_…", "gog-…-list", "gog-…-grid", "gog-…-custom")` + `onPause()` uses activeDlKey + `startInstall()` sets activeDlKey + `onBackPressed()` cancels
+- `EpicGameDetailActivity`: same treatment — `findActiveEntry("epic_…", "epic-…-list", "epic-…-grid")` + `activeDlKey = dlKey` added to `startInstall()`
+- `AmazonGameDetailActivity`: same treatment — `findActiveEntry("amazon_…", "amz-…-list", "amz-…-grid")` + activeDlKey + `onBackPressed()` now cancels (was missing)
+
+Result: opening any game detail page while it is downloading (from any source) immediately shows
+progress bar + current %, Cancel button, and live listener updates.
