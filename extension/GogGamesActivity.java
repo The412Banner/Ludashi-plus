@@ -37,7 +37,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,6 +64,8 @@ public class GogGamesActivity extends Activity {
     private static final String TAG = "BH_GOG";
     private static final String CACHE_KEY = "gog_library_cache";
     private static final String VIEW_MODE_KEY = "view_mode";
+    private static final int REQ_GAME_DETAIL = 1001;
+    private static final int REQ_DOWNLOADS   = 1002;
 
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
     private TextView syncText;
@@ -75,6 +79,7 @@ public class GogGamesActivity extends Activity {
     private View expandedSection = null;
     private TextView expandedArrow = null;
     private String viewMode; // "list" or "grid"
+    private final Map<String, List<String[]>> gogDlcBuffer = new HashMap<>();
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -1440,5 +1445,26 @@ public class GogGamesActivity extends Activity {
         java.io.File[] children = dir.listFiles();
         if (children != null) for (java.io.File c : children) deleteDir(c);
         dir.delete();
+    }
+    // ── Full-screen detail ────────────────────────────────────────────────────
+
+    private void openDetailScreen(GogGame game) {
+        Intent intent = new Intent(this, GogGameDetailActivity.class);
+        intent.putExtra("game_id",     game.gameId);
+        intent.putExtra("title",       game.title);
+        intent.putExtra("image_url",   game.imageUrl);
+        intent.putExtra("description", game.description);
+        intent.putExtra("developer",   game.developer);
+        intent.putExtra("category",    game.category);
+        intent.putExtra("generation",  game.generation);
+        startActivityForResult(intent, REQ_GAME_DETAIL);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_GAME_DETAIL && resultCode == GogGameDetailActivity.RESULT_REFRESH) {
+            applyFilter(searchBar != null ? searchBar.getText().toString() : "");
+        }
     }
 }
