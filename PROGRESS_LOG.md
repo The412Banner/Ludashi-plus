@@ -1149,3 +1149,11 @@ and re-register a fresh DownloadListener. Covers all 7 download paths (GOG list/
 Epic list/grid, Amazon list/grid). Requires adding getEntry(dlKey) to StoreDownloadQueue.
 
 CI pending.
+
+### Post-CI — feat: Downloads button + in-progress restore (2026-04-30)
+- Commit: `6702f07` | CI run: 25185022012 ✅ success
+- ⬇ Downloads button added to GOG/Epic/Amazon headers → opens DownloadsActivity
+- All 6 list/grid card-build sites check StoreDownloadQueue.getEntry() on rebuild
+- Active downloads immediately show expand section, Cancel button, live progress bar + status
+- StoreDownloadQueue.getEntry(String) added for lookup
+- store-update branch: latest commit `6702f07`, all CI green
