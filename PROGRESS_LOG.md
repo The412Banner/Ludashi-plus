@@ -38,13 +38,19 @@ Build and modification history for Ludashi-plus — Winlator Ludashi v2.9 bionic
 - Removed 118 drawable entries (`ab_0001`-`ab_0117` + `animated_background`) that CI strips but v3.0 public.xml still declares
 - ✅ **Full green** — build 6m14s + all 4 variants (~2min each)
 
-#### Current APK state (as of `4092420` — 2026-04-30)
+**Run 6 — `25b0d15`** — `fix: start DEX injection at classes16 not classes17`
+- ❌ All 4 store menu items crashed: `ClassNotFoundException: com.winlator.cmod.store.GogMainActivity`
+- Root cause: v3.0 base has 15 DEX files (classes.dex–classes15.dex); we were injecting at classes17.dex, leaving a gap at classes16.dex. ART loads DEX sequentially and stops at the first missing entry, so our store extension was never loaded
+- Fix: injection now starts at classes16.dex (Java stores), classes17.dex+ (JavaSteam), classes18.dex+ (Kotlin Steam), etc.
+- ✅ **Green** — CI run 25168431777, all 5 APKs rebuilt
+
+#### Current APK state (as of `25b0d15` — 2026-04-30)
 - Tag: `3.0` (pre-release)
 - Branch: `3.0`
 - 5 APKs live on release page
-- App launch crash: **fixed** (pending device install test)
-- Store menu navigation: **fixed** (v3.0 resource IDs throughout)
-- Next: device test — install `LudashiPlus-3.0.apk`, verify app launches, menu opens, store tabs work
+- App launch crash: **fixed**
+- Store ClassNotFoundException: **fixed** (DEX gap closed)
+- Next: device test — install `LudashiPlus-3.0.apk`, verify app launches, menu opens, all 4 store tabs work
 
 #### v3.0 base changes that required patching
 | Change | Impact |
