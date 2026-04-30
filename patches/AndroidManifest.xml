@@ -49,6 +49,11 @@
         <activity android:exported="false" android:name="com.winlator.cmod.store.AmazonGamesActivity" android:theme="@style/AppTheme.Dark"/>
         <activity android:exported="false" android:name="com.winlator.cmod.store.SteamMainActivity" android:theme="@style/AppTheme.Dark"/>
         <activity android:exported="false" android:name="com.winlator.cmod.store.SteamLoginActivity" android:theme="@style/AppTheme.Dark"/>
+        <activity android:exported="false" android:name="com.winlator.cmod.store.GogGameDetailActivity" android:theme="@style/AppTheme.Dark"/>
+        <activity android:exported="false" android:name="com.winlator.cmod.store.EpicGameDetailActivity" android:theme="@style/AppTheme.Dark"/>
+        <activity android:exported="false" android:name="com.winlator.cmod.store.AmazonGameDetailActivity" android:theme="@style/AppTheme.Dark"/>
+        <activity android:exported="false" android:name="com.winlator.cmod.store.EpicFreeGamesActivity" android:theme="@style/AppTheme.Dark"/>
+        <activity android:exported="false" android:name="com.winlator.cmod.store.DownloadsActivity" android:theme="@style/AppTheme.Dark"/>
         <activity android:exported="false" android:name="com.winlator.cmod.store.QrLoginActivity" android:theme="@style/AppTheme.Dark"/>
         <activity android:configChanges="orientation|screenSize|keyboardHidden" android:exported="false" android:name="com.winlator.cmod.store.SteamGamesActivity" android:screenOrientation="fullSensor" android:theme="@style/AppTheme.Dark"/>
         <activity android:configChanges="orientation|screenSize|keyboardHidden" android:exported="false" android:name="com.winlator.cmod.store.SteamGameDetailActivity" android:screenOrientation="fullSensor" android:theme="@style/AppTheme.Dark"/>
