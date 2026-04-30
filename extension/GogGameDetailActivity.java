@@ -405,7 +405,6 @@ public class GogGameDetailActivity extends Activity {
         cancelDownload = () -> StoreDownloadQueue.cancel(this, dlKey);
         StoreDownloadQueue.startGog(this, makeGogGame(), dlKey);
         attachDownloadListener(dlKey);
-        startForegroundService(svc);
     }
 
     private void attachDownloadListener(String dlKey) {
@@ -594,7 +593,7 @@ public class GogGameDetailActivity extends Activity {
         }
         new Thread(() -> {
             String token = prefs.getString("access_token", null);
-            long size = GogDownloadManager.fetchInstallSizeBytes(gameId, token);
+            long size = GogDownloadManager.fetchGameSize(GogGameDetailActivity.this, makeGogGame());
             if (size > 0) prefs.edit().putLong("gog_size_" + gameId, size).apply();
             uiHandler.post(() -> {
                 if (sizeTV != null) sizeTV.setText(size > 0 ? formatBytes(size) : "Unknown");
@@ -924,8 +923,7 @@ public class GogGameDetailActivity extends Activity {
 
         cloudBrowseBtn = makeBtn("Browse", 0xFF333355);
         cloudBrowseBtn.setOnClickListener(v -> {
-            Intent intent = new Intent(this, FolderPickerActivity.class);
-            startActivityForResult(intent, REQUEST_FOLDER_PICKER);
+            /* FolderPickerActivity not available in Ludashi-plus */
         });
         LinearLayout.LayoutParams browseLp = new LinearLayout.LayoutParams(-2, dp(36));
         browseLp.leftMargin = dp(8);
