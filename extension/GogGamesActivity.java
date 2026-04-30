@@ -639,7 +639,8 @@ public class GogGamesActivity extends Activity {
                 pctTV.setText("0%");
                 pctTV.setVisibility(View.VISIBLE);
 
-                cancelRef1[0] = GogDownloadManager.startDownload(this, game, new GogDownloadManager.Callback() {
+                String dlKey1 = "gog-" + game.gameId + "-list";
+                StoreDownloadQueue.addListener(dlKey1, new StoreDownloadQueue.DownloadListener() {
                     @Override public void onProgress(String msg, int pct) {
                         uiHandler.post(() -> {
                             statusTV.setText(msg);
@@ -684,11 +685,12 @@ public class GogGamesActivity extends Activity {
                             actionBtn.setEnabled(true);
                         });
                     }
-                    @Override public void onSelectExe(java.util.List<String> candidates,
-                                                       java.util.function.Consumer<String> onSelected) {
-                        showExePicker(candidates, onSelected);
-                    }
                 });
+                StoreDownloadQueue.startGog(this, game, dlKey1);
+                cancelRef1[0] = () -> {
+                    StoreDownloadQueue.cancel(GogGamesActivity.this, dlKey1);
+                    StoreDownloadQueue.removeListener(dlKey1);
+                };
             });
         });
 
@@ -898,7 +900,8 @@ public class GogGamesActivity extends Activity {
                 actionBtn.setBackgroundColor(0xFFCC3333);
                 progressBar.setVisibility(View.VISIBLE);
 
-                cancelRef2[0] = GogDownloadManager.startDownload(this, game, new GogDownloadManager.Callback() {
+                String dlKey2 = "gog-" + game.gameId + "-grid";
+                StoreDownloadQueue.addListener(dlKey2, new StoreDownloadQueue.DownloadListener() {
                     @Override public void onProgress(String msg, int pct) {
                         uiHandler.post(() -> {
                             progressBar.setProgress(pct);
@@ -936,11 +939,12 @@ public class GogGamesActivity extends Activity {
                             actionBtn.setEnabled(true);
                         });
                     }
-                    @Override public void onSelectExe(java.util.List<String> candidates,
-                                                       java.util.function.Consumer<String> onSelected) {
-                        showExePicker(candidates, onSelected);
-                    }
                 });
+                StoreDownloadQueue.startGog(this, game, dlKey2);
+                cancelRef2[0] = () -> {
+                    StoreDownloadQueue.cancel(GogGamesActivity.this, dlKey2);
+                    StoreDownloadQueue.removeListener(dlKey2);
+                };
             });
         });
 
@@ -1078,7 +1082,8 @@ public class GogGamesActivity extends Activity {
                 statusTV.setText("0%  Starting…");
                 dialog.setCancelable(false);
 
-                cancelRef3[0] = GogDownloadManager.startDownload(this, game, new GogDownloadManager.Callback() {
+                String dlKey3 = "gog-" + game.gameId + "-custom";
+                StoreDownloadQueue.addListener(dlKey3, new StoreDownloadQueue.DownloadListener() {
                     @Override public void onProgress(String msg, int pct) {
                         uiHandler.post(() -> {
                             progressBar.setProgress(pct);
@@ -1125,11 +1130,12 @@ public class GogGamesActivity extends Activity {
                             dialog.setCancelable(true);
                         });
                     }
-                    @Override public void onSelectExe(java.util.List<String> candidates,
-                                                       java.util.function.Consumer<String> onSelected) {
-                        showExePicker(candidates, onSelected);
-                    }
                 });
+                StoreDownloadQueue.startGog(this, game, dlKey3);
+                cancelRef3[0] = () -> {
+                    StoreDownloadQueue.cancel(GogGamesActivity.this, dlKey3);
+                    StoreDownloadQueue.removeListener(dlKey3);
+                };
                 }); // end showInstallConfirm
             });
             return; // dialog already shown above

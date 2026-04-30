@@ -1110,3 +1110,23 @@ main menu.
 - Branch: `store-update`, latest commit: `72c9a6f`
 - CI: ✅ green (run 25183066096)
 - Ready to merge into `3.0` when user confirms device test
+
+### Pre-push — fix: route all list/grid downloads through StoreDownloadQueue for notifications (2026-04-30)
+
+**Problem:** Android progress notifications only appeared when installing from GameDetailActivity,
+not from the games list. Root cause: all 7 list/grid Install buttons (GOG list, GOG grid, GOG
+custom-install dialog, Epic list, Epic grid, Amazon list, Amazon grid) called
+`GogDownloadManager.startDownload()` / `startEpicDownload()` / `startAmazonDownload()` directly,
+bypassing `StoreDownloadQueue` entirely.
+
+**Fix:** All 7 sites now route through `StoreDownloadQueue.startGog/Epic/Amazon()`. The in-place
+UI (progress bar, status text, checkmark) is delivered via `StoreDownloadQueue.addListener(dlKey, ...)`.
+Cancel buttons call `StoreDownloadQueue.cancel() + removeListener()`. Each site gets a unique dlKey:
+- `gog-{gameId}-list`, `gog-{gameId}-grid`, `gog-{gameId}-custom`
+- `epic-{appName}-list`, `epic-{appName}-grid`
+- `amz-{productId}-list`, `amz-{productId}-grid`
+
+Files changed: GogGamesActivity.java (3 sites), EpicGamesActivity.java (2 sites),
+AmazonGamesActivity.java (2 sites)
+
+CI pending.

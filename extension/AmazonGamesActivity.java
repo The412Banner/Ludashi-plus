@@ -754,7 +754,8 @@ public class AmazonGamesActivity extends Activity {
                 actionBtn.setBackgroundColor(COLOR_CANCEL);
                 progressBar.setVisibility(View.VISIBLE);
 
-                cancelRef[0] = startAmazonDownload(game, new DownloadCallback() {
+                String dlKeyG = "amz-" + game.productId + "-grid";
+                StoreDownloadQueue.addListener(dlKeyG, new StoreDownloadQueue.DownloadListener() {
                     @Override public void onProgress(String msg, int pct) {
                         uiHandler.post(() -> progressBar.setProgress(pct));
                     }
@@ -790,11 +791,12 @@ public class AmazonGamesActivity extends Activity {
                             actionBtn.setEnabled(true);
                         });
                     }
-                    @Override public void onSelectExe(List<String> candidates,
-                                                      java.util.function.Consumer<String> onSelected) {
-                        showExePicker(candidates, onSelected);
-                    }
                 });
+                StoreDownloadQueue.startAmazon(this, game, dlKeyG);
+                cancelRef[0] = () -> {
+                    StoreDownloadQueue.cancel(AmazonGamesActivity.this, dlKeyG);
+                    StoreDownloadQueue.removeListener(dlKeyG);
+                };
             });
         });
 

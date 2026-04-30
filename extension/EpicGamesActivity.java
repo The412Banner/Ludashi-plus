@@ -532,7 +532,8 @@ public class EpicGamesActivity extends Activity {
                 pctTV.setText("0%");
                 pctTV.setVisibility(View.VISIBLE);
 
-                cancelRef[0] = startEpicDownload(game, new DownloadCallback() {
+                String dlKeyL = "epic-" + game.appName + "-list";
+                StoreDownloadQueue.addListener(dlKeyL, new StoreDownloadQueue.DownloadListener() {
                     @Override public void onProgress(String msg, int pct) {
                         uiHandler.post(() -> {
                             statusTV.setText(msg);
@@ -577,11 +578,12 @@ public class EpicGamesActivity extends Activity {
                             actionBtn.setEnabled(true);
                         });
                     }
-                    @Override public void onSelectExe(List<String> candidates,
-                                                       java.util.function.Consumer<String> onSelected) {
-                        showExePicker(candidates, onSelected);
-                    }
                 });
+                StoreDownloadQueue.startEpic(this, game, dlKeyL);
+                cancelRef[0] = () -> {
+                    StoreDownloadQueue.cancel(EpicGamesActivity.this, dlKeyL);
+                    StoreDownloadQueue.removeListener(dlKeyL);
+                };
             });
         });
 
@@ -747,7 +749,8 @@ public class EpicGamesActivity extends Activity {
                 actionBtn.setBackgroundColor(COLOR_CANCEL);
                 progressBar.setVisibility(View.VISIBLE);
 
-                cancelRef[0] = startEpicDownload(game, new DownloadCallback() {
+                String dlKeyG = "epic-" + game.appName + "-grid";
+                StoreDownloadQueue.addListener(dlKeyG, new StoreDownloadQueue.DownloadListener() {
                     @Override public void onProgress(String msg, int pct) {
                         uiHandler.post(() -> progressBar.setProgress(pct));
                     }
@@ -783,11 +786,12 @@ public class EpicGamesActivity extends Activity {
                             actionBtn.setEnabled(true);
                         });
                     }
-                    @Override public void onSelectExe(List<String> candidates,
-                                                       java.util.function.Consumer<String> onSelected) {
-                        showExePicker(candidates, onSelected);
-                    }
                 });
+                StoreDownloadQueue.startEpic(this, game, dlKeyG);
+                cancelRef[0] = () -> {
+                    StoreDownloadQueue.cancel(EpicGamesActivity.this, dlKeyG);
+                    StoreDownloadQueue.removeListener(dlKeyG);
+                };
             });
         });
 
