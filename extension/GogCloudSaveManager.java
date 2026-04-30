@@ -53,7 +53,7 @@ public final class GogCloudSaveManager {
                 if (galaxyToken == null) { cb.onError("Not logged in to GOG"); return; }
                 String userId = prefs.getString("user_id", null);
                 if (userId == null) { cb.onError("GOG user ID not found — please sign in again"); return; }
-                String clientId = GogDownloadManager.getOrFetchClientId(ctx, gameId, galaxyToken);
+                String clientId = null /* getOrFetchClientId not in Ludashi-plus — falls back to galaxyToken */;
                 String token = getGameScopedToken(ctx, gameId, clientId, prefs);
                 if (token == null) token = galaxyToken; // fallback
                 debug(ctx, "GOG upload — gameId=" + gameId + " userId=" + userId + " clientId=" + clientId + " scopedToken=" + (token.equals(galaxyToken) ? "fallback" : "ok"));
@@ -117,7 +117,7 @@ public final class GogCloudSaveManager {
                 if (galaxyToken == null) { cb.onError("Not logged in to GOG"); return; }
                 String userId = prefs.getString("user_id", null);
                 if (userId == null) { cb.onError("GOG user ID not found — please sign in again"); return; }
-                String clientId = GogDownloadManager.getOrFetchClientId(ctx, gameId, galaxyToken);
+                String clientId = null /* getOrFetchClientId not in Ludashi-plus — falls back to galaxyToken */;
                 String token = getGameScopedToken(ctx, gameId, clientId, prefs);
                 if (token == null) token = galaxyToken; // fallback
                 debug(ctx, "GOG download — gameId=" + gameId + " userId=" + userId + " clientId=" + clientId + " scopedToken=" + (token.equals(galaxyToken) ? "fallback" : "ok"));
