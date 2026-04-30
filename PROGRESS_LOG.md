@@ -1178,6 +1178,10 @@ progress bar + current %, Cancel button, and live listener updates.
 - findActiveEntry() bridges list/grid dlKey variants to the detail screen
 - store-update branch: latest commit `33701df`, all CI green
 
+### Post-push — fix: cancel broken for all stores (2026-04-30)
+- Commit: `61df39d` | CI run: 25188067967 ✅ success
+- store-update branch: latest commit `61df39d`, all CI green
+
 ### Pre-push — fix: cancel broken for all stores (2026-04-30)
 **Root cause 1 — GOG cancel completely non-functional:**
 `StoreDownloadQueue.startGog()` discarded the cancel `Runnable` returned by
