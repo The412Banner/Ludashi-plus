@@ -1008,3 +1008,105 @@ From section 5.3 / 2.2:
 - Root cause: `ExecuteAsyncKt.kt` filename → Kotlin generates `ExecuteAsyncKtKt` → @file:JvmName forces correct `ExecuteAsyncKt`
 - classes22.dex now has correct class name — should resolve ClassNotFoundException at runtime
 - **Next step:** install this APK, try downloading a game, check debug log + logcat
+
+---
+
+## v3.0.0 — 3.0 branch porting session (2026-04-30)
+
+### Context
+StevenMXZ released Ludashi v3.0 on 2026-04-30 with a full Vulkan renderer rewrite,
+ContentManager restructure, and removal of the Contents tab. Branched `3.0` from `main`
+and ported all patches to the new base APK (`ludashi-bionic.apk` 505MB, uploaded to
+`base-apk-3.0` release on our repo).
+
+### 3.0 porting CI run table
+
+| Commit | Description | CI Run | Result |
+|---|---|---|---|
+| `da38758` | ci: switch base APK to Winlator-Ludashi v3.0 | — | ❌ 24 dead public.xml entries |
+| `269f502` | fix(3.0): remove dead public.xml entries dropped in v3.0 base | — | ❌ main_menu_contents still present |
+| `65d2353` | fix(3.0): remove main_menu_contents item | — | ❌ store IDs collide with v3.0 resources |
+| `7c58ebb` | fix(3.0): rebuild public.xml from v3.0 base + append store IDs | — | ❌ 118 ab_*.png declared but stripped |
+| `a7c2d90` | fix(3.0): rebase MainActivity.smali + public.xml on v3.0 resources | — | ❌ DEX gap at classes16 |
+| `(gap fix)` | fix: inject at classes16.dex (v3.0 base has classes.dex–classes15) | 25169474738 | ✅ **success** |
+
+**Key v3.0 resource ID facts:**
+- Our store IDs: GOG=`0x7f090392`, Epic=`0x7f090391`, Amazon=`0x7f090390`, Steam=`0x7f090393`
+- packed-switch base now at `0x7f090275` (was `0x7f09026c` in v2.9)
+
+### Post-green additions (same session)
+
+| Commit | Description | CI Run | Result |
+|---|---|---|---|
+| `4a5345e` | feat: full-screen splash install screen (SplashInstallActivity) | 25171129287 | ✅ success |
+| `e38e262` | feat: attribution subtitle ("Based off StevenMXZ Ludashi 3.0") | — | — |
+| `4aefaa0` | feat: Xnick417x contents URL + Banners Turnip repo + splash cyan | — | — |
+| `1eb5e43` | docs: update README for v3.0.0 | — | — |
+
+### v3.0.0 stable release
+- Tag: `v3.0.0` pushed 2026-04-30
+- Branch `3.0` set as default GitHub branch
+- CI workflow updated: `v*` tags → stable release; non-tag builds → artifact only
+- Pre-release mode active after this point
+
+### CI workflow updates (same session)
+| Commit | Description |
+|---|---|
+| `0a8defb` | ci: branch builds produce artifacts only, no releases |
+| `d2a7931` | ci: stable release for v* tags, prerelease for branch builds |
+| `87f9eda` | ci: skip release and variants for pre-release tags (`-pre` in name) |
+
+---
+
+## store-update branch — GOG/Epic/Amazon store enhancements (2026-04-30)
+
+### Goal
+Port GOG/Epic/Amazon game detail screens, cloud save managers, and Epic free games
+from BannerHub. Replace BH-specific `BhDownloadService` (foreground service) with a
+new `StoreDownloadQueue` in-process singleton. Add DownloadsActivity accessible from
+main menu.
+
+### New files added
+- `extension/GogGameDetailActivity.java` — ported + patched (BhDownloadService → StoreDownloadQueue, launch → GogLaunchHelper.addToLauncher)
+- `extension/GogCloudSaveManager.java` — ported (package rename only, clientId falls back to galaxyToken)
+- `extension/EpicGameDetailActivity.java` — ported + patched (pendingLaunchExe → LudashiLaunchBridge.addToLauncher)
+- `extension/EpicCloudSaveManager.java` — ported (package rename only)
+- `extension/EpicFreeGamesActivity.java` — ported (package rename only, fully standalone)
+- `extension/AmazonGameDetailActivity.java` — ported + patched
+- `extension/StoreDownloadQueue.java` — NEW: in-process download singleton replacing BhDownloadService
+- `extension/DownloadsActivity.java` — NEW: polls StoreDownloadQueue every 1s, shows progress cards
+
+### Files modified
+- `extension/GogGamesActivity.java` — added HashMap import, gogDlcBuffer field, REQ_GAME_DETAIL/REQ_DOWNLOADS constants, openDetailScreen(), onActivityResult()
+- `extension/EpicGamesActivity.java` — same additions
+- `extension/AmazonGamesActivity.java` — same additions
+- `patches/res/menu/main_menu.xml` — added Downloads item to group_game_stores
+- `patches/res/values/public.xml` — added `main_menu_downloads` ID at `0x7f090394`
+- `patches/res/values/ludashi_plus_ids.xml` — added `main_menu_downloads` item definition
+- `patches/AndroidManifest.xml` — declared all 5 new activities
+- `patches/smali_classes8/.../MainActivity.smali` — added if-eq for `0x7f090394` → DownloadsActivity
+
+### CI run table (store-update)
+
+| Commit | Description | CI Run | Result |
+|---|---|---|---|
+| `(initial port commits)` | All 6 new files + 3 modified GamesActivity | 25180073813 | ❌ missing Intent import × 3, startForegroundService undef, fetchInstallSizeBytes undef, FolderPickerActivity undef, getOrFetchClientId undef |
+| `a57d13d/0085aae/c11aad9` | fix: add missing Intent import to all 3 GamesActivity | — | — |
+| `fa5c728` | fix: stub getOrFetchClientId → null (galaxyToken fallback) | — | — |
+| `a9c3a2a/1073794/481d501` | fix: remove startForegroundService; stub fetchInstallSizeBytes → -1L; FolderPickerActivity → no-op | 25180621434 | ❌ aapt: public symbol id/main_menu_downloads not defined |
+| `e1683da` | fix: add main_menu_downloads to ludashi_plus_ids.xml | 25181177753 | ✅ **success** |
+
+### Post-green enhancements (same session)
+
+| Commit | Description | CI Run | Result |
+|---|---|---|---|
+| `72c9a6f` | feat: add download notifications + wire detail screens to card taps | 25183066096 | ✅ **success** |
+
+**Detail screen wiring:** All 3 GamesActivity files — list card (second tap when expanded) and grid tile (long press) now call `openDetailScreen(game)` instead of the old inline AlertDialog.
+
+**Download notifications:** `StoreDownloadQueue` now posts an ongoing Android progress notification for each download. Shows store + title, progress bar, Cancel action button. Throttled per % change. On finish: dismissed (cancelled), static error card, or static complete card. BroadcastReceiver registered dynamically on first download start, unregistered when all downloads finish. Uses `RECEIVER_NOT_EXPORTED` on API 33+.
+
+### Current state (2026-04-30)
+- Branch: `store-update`, latest commit: `72c9a6f`
+- CI: ✅ green (run 25183066096)
+- Ready to merge into `3.0` when user confirms device test
