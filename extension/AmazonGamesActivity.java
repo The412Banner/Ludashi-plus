@@ -172,6 +172,22 @@ public class AmazonGamesActivity extends Activity {
         header.addView(refreshBtn, new LinearLayout.LayoutParams(-2, dp(40)));
 
         root.addView(header, new LinearLayout.LayoutParams(-1, -2));
+        Button dlBtn = new Button(this);
+        dlBtn.setText("\u2b07");
+        dlBtn.setTextColor(0xFFFFFFFF);
+        GradientDrawable dlBtnBg = new GradientDrawable();
+        dlBtnBg.setColor(0xFF333333);
+        dlBtnBg.setCornerRadius(dp(4));
+        dlBtn.setBackground(dlBtnBg);
+        dlBtn.setTextSize(16f);
+        dlBtn.setPadding(dp(12), 0, dp(12), 0);
+        dlBtn.setOnFocusChangeListener((v, hasFocus) -> {
+            dlBtnBg.setColor(hasFocus ? 0xFF555555 : 0xFF333333);
+            dlBtnBg.setStroke(hasFocus ? dp(2) : 0, hasFocus ? 0xFFFFD700 : 0x00000000);
+        });
+        dlBtn.setOnClickListener(v -> startActivityForResult(
+                new Intent(this, DownloadsActivity.class), REQ_DOWNLOADS));
+        header.addView(dlBtn, new LinearLayout.LayoutParams(-2, dp(40)));
 
         // Search bar
         searchBar = new EditText(this);
@@ -612,6 +628,72 @@ public class AmazonGamesActivity extends Activity {
                 expandedSection = expandSection;
                 expandedArrow   = arrowTV;
             }
+
+        // Restore in-progress UI if a download is already running for this game
+        {
+            String _dlKeyR = "amz-" + game.productId + "-list";
+            StoreDownloadQueue.DownloadEntry _eR = StoreDownloadQueue.getEntry(_dlKeyR);
+            if (_eR != null && _eR.active) {
+                expandSection.setVisibility(View.VISIBLE);
+                arrowTV.setText("▲");
+                actionBtn.setText("Cancel");
+                actionBtn.setBackgroundColor(0xFFCC3333);
+                progressBar.setVisibility(View.VISIBLE);
+                progressBar.setProgress(_eR.percent);
+                pctTV.setText(_eR.percent + "%");
+                pctTV.setVisibility(View.VISIBLE);
+                statusTV.setVisibility(View.VISIBLE);
+                statusTV.setText(_eR.status);
+                StoreDownloadQueue.addListener(_dlKeyR, new StoreDownloadQueue.DownloadListener() {
+                    @Override public void onProgress(String msg, int pct) {
+                        uiHandler.post(() -> {
+                            statusTV.setText(msg);
+                            progressBar.setProgress(pct);
+                            pctTV.setText(pct + "%");
+                        });
+                    }
+                    @Override public void onComplete(String exePath) {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            progressBar.setProgress(100);
+                            pctTV.setVisibility(View.GONE);
+                            checkmark.setVisibility(View.VISIBLE);
+                            collapsedCheckTV.setVisibility(View.VISIBLE);
+                            statusTV.setText("Installed");
+                            actionBtn.setText("Add to Launcher");
+                            actionBtn.setBackgroundColor(COLOR_ADD);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                    @Override public void onError(String msg) {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            pctTV.setVisibility(View.GONE);
+                            statusTV.setText("Error: " + msg);
+                            actionBtn.setText("Install");
+                            actionBtn.setBackgroundColor(COLOR_ACCENT);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                    @Override public void onCancelled() {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            progressBar.setProgress(0);
+                            progressBar.setVisibility(View.GONE);
+                            pctTV.setVisibility(View.GONE);
+                            statusTV.setText("");
+                            actionBtn.setText("Install");
+                            actionBtn.setBackgroundColor(COLOR_ACCENT);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                });
+                cancelRef[0] = () -> {
+                    StoreDownloadQueue.cancel(AmazonGamesActivity.this, _dlKeyR);
+                    StoreDownloadQueue.removeListener(_dlKeyR);
+                };
+            }
+        }
         });
 
         gameListLayout.addView(card, cardLp);
@@ -812,6 +894,58 @@ public class AmazonGamesActivity extends Activity {
             }
         });
 
+
+        // Restore in-progress UI if a download is already running for this game
+        {
+            String _dlKeyRG = "amz-" + game.productId + "-grid";
+            StoreDownloadQueue.DownloadEntry _eRG = StoreDownloadQueue.getEntry(_dlKeyRG);
+            if (_eRG != null && _eRG.active) {
+                actionRow.setVisibility(View.VISIBLE);
+                actionBtn.setText("Cancel");
+                actionBtn.setBackgroundColor(0xFFCC3333);
+                progressBar.setVisibility(View.VISIBLE);
+                progressBar.setProgress(_eRG.percent);
+                StoreDownloadQueue.addListener(_dlKeyRG, new StoreDownloadQueue.DownloadListener() {
+                    @Override public void onProgress(String msg, int pct) {
+                        uiHandler.post(() -> progressBar.setProgress(pct));
+                    }
+                    @Override public void onComplete(String exePath) {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            progressBar.setProgress(100);
+                            progressBar.setVisibility(View.GONE);
+                            checkTV.setVisibility(View.VISIBLE);
+                            actionBtn.setText("Add to Launcher");
+                            actionBtn.setBackgroundColor(COLOR_ADD);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                    @Override public void onError(String msg) {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            progressBar.setVisibility(View.GONE);
+                            actionBtn.setText("Install");
+                            actionBtn.setBackgroundColor(COLOR_ACCENT);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                    @Override public void onCancelled() {
+                        uiHandler.post(() -> {
+                            cancelRef[0] = null;
+                            progressBar.setProgress(0);
+                            progressBar.setVisibility(View.GONE);
+                            actionBtn.setText("Install");
+                            actionBtn.setBackgroundColor(COLOR_ACCENT);
+                            actionBtn.setEnabled(true);
+                        });
+                    }
+                });
+                cancelRef[0] = () -> {
+                    StoreDownloadQueue.cancel(AmazonGamesActivity.this, _dlKeyRG);
+                    StoreDownloadQueue.removeListener(_dlKeyRG);
+                };
+            }
+        }
         tile.setOnLongClickListener(v -> {
             openDetailScreen(game);
             return true;

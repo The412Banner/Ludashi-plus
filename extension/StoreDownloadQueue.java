@@ -84,6 +84,10 @@ public class StoreDownloadQueue {
         return new ArrayList<>(entries.values());
     }
 
+    public static DownloadEntry getEntry(String dlKey) {
+        return entries.get(dlKey);
+    }
+
     // ── GOG ──────────────────────────────────────────────────────────────────
 
     public static void startGog(Context ctx, GogGame game, String dlKey) {

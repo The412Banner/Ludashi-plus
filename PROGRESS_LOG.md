@@ -1135,3 +1135,17 @@ CI pending.
 - Commit: `ba5fe10` | CI run: 25183887535 ✅ success
 - All 7 download sites now go through StoreDownloadQueue → notifications fire for every install path
 - store-update branch: latest commit `ba5fe10`, all CI green
+
+### Pre-push — feat: Downloads header button + in-progress restore on card build (2026-04-30)
+
+**Downloads button:** Add "⬇" button to the header row of GogGamesActivity, EpicGamesActivity,
+AmazonGamesActivity. Taps open DownloadsActivity via startActivityForResult(REQ_DOWNLOADS).
+Same styling as existing header buttons.
+
+**Progress restore:** When addGameCard() / makeGridTile() builds a card, check
+StoreDownloadQueue.getEntry(dlKey) — if a download is active for that game, immediately
+restore the in-progress UI (expand section visible, Cancel button, live progress bar/status)
+and re-register a fresh DownloadListener. Covers all 7 download paths (GOG list/grid/custom,
+Epic list/grid, Amazon list/grid). Requires adding getEntry(dlKey) to StoreDownloadQueue.
+
+CI pending.
