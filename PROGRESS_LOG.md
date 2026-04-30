@@ -5,7 +5,7 @@ Build and modification history for Ludashi-plus — Winlator Ludashi v2.9 bionic
 ---
 
 ### [branch] — 3.0 — v3.0 base APK porting session (2026-04-30)
-**Branch:** `3.0` | **Tag:** `3.0` (pre-release) | CI ✅ run 25167172753
+**Branch:** `3.0` | **Tag:** `3.0` (pre-release) | CI ✅ run 25171129287
 
 #### What was done
 - Added `base-apk-3.0` release to our repo with Winlator-Ludashi v3.0 `ludashi-bionic.apk` (505MB)
@@ -44,13 +44,22 @@ Build and modification history for Ludashi-plus — Winlator Ludashi v2.9 bionic
 - Fix: injection now starts at classes16.dex (Java stores), classes17.dex+ (JavaSteam), classes18.dex+ (Kotlin Steam), etc.
 - ✅ **Green** — CI run 25168431777, all 5 APKs rebuilt
 
-#### Current APK state (as of `25b0d15` — 2026-04-30)
+**Run 7 — `4a5345e`** — `feat: full-screen splash install screen`
+- Replaced `DownloadProgressDialog` first-run popup with full-screen branded splash
+- `SplashInstallActivity` is now the LAUNCHER; drives imagefs.txz + Wine + driver extraction via reflection + `OnExtractFileListener` proxy; reports live % progress
+- Shows logo, status label, purple progress bar, % counter; Proceed button appears at 100%
+- On Proceed: requests `MANAGE_EXTERNAL_STORAGE` permission, then starts MainActivity
+- Already-installed fast-path: `finish()` before `setContentView` — no UI flash on repeat launches
+- ✅ **Green** — CI run 25171129287, all 5 APKs rebuilt
+
+#### Current APK state (as of `4a5345e` — 2026-04-30)
 - Tag: `3.0` (pre-release)
 - Branch: `3.0`
 - 5 APKs live on release page
 - App launch crash: **fixed**
 - Store ClassNotFoundException: **fixed** (DEX gap closed)
-- Next: device test — install `LudashiPlus-3.0.apk`, verify app launches, menu opens, all 4 store tabs work
+- First-run splash: **added** (full-screen, branded, progress bar, Proceed + permissions)
+- Next: device test — install `LudashiPlus-3.0.apk`, verify splash on first install, Proceed → permissions, then app opens normally on subsequent launches
 
 #### v3.0 base changes that required patching
 | Change | Impact |
