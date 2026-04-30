@@ -136,6 +136,7 @@ public final class GogDownloadManager {
             if (buildsJson != null) {
                 String err = runGen2(ctx, game, token, buildsJson, cb, dbg, cancelled, installDirRef);
                 if (err == null) { writeDebug(ctx, dbg); return; }
+                if (cancelled.get()) { writeDebug(ctx, dbg); return; }
                 dbg.append("gen2_failed=").append(err).append("\n");
             }
 
@@ -155,6 +156,7 @@ public final class GogDownloadManager {
             }
             String err1 = runGen1(ctx, game, token, builds1Json, cb, dbg, cancelled, installDirRef);
             if (err1 != null) {
+                if (cancelled.get()) { writeDebug(ctx, dbg); return; }
                 dbg.append("gen1_failed=").append(err1).append("\n");
 
                 // Both gen1 and gen2 empty → old installer system, fall back to direct download

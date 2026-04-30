@@ -703,10 +703,8 @@ public class GogGamesActivity extends Activity {
                     }
                 });
                 StoreDownloadQueue.startGog(this, game, dlKey1);
-                cancelRef1[0] = () -> {
+                cancelRef1[0] = () ->
                     StoreDownloadQueue.cancel(GogGamesActivity.this, dlKey1);
-                    StoreDownloadQueue.removeListener(dlKey1);
-                };
             });
         });
 
@@ -792,10 +790,8 @@ public class GogGamesActivity extends Activity {
                         });
                     }
                 });
-                cancelRef1[0] = () -> {
+                cancelRef1[0] = () ->
                     StoreDownloadQueue.cancel(GogGamesActivity.this, _dlKeyR);
-                    StoreDownloadQueue.removeListener(_dlKeyR);
-                };
             }
         }
         });
@@ -1023,10 +1019,8 @@ public class GogGamesActivity extends Activity {
                     }
                 });
                 StoreDownloadQueue.startGog(this, game, dlKey2);
-                cancelRef2[0] = () -> {
+                cancelRef2[0] = () ->
                     StoreDownloadQueue.cancel(GogGamesActivity.this, dlKey2);
-                    StoreDownloadQueue.removeListener(dlKey2);
-                };
             });
         });
 
@@ -1091,10 +1085,8 @@ public class GogGamesActivity extends Activity {
                         });
                     }
                 });
-                cancelRef2[0] = () -> {
+                cancelRef2[0] = () ->
                     StoreDownloadQueue.cancel(GogGamesActivity.this, _dlKeyRG);
-                    StoreDownloadQueue.removeListener(_dlKeyRG);
-                };
             }
         }
         tile.setOnLongClickListener(v -> {
@@ -1266,10 +1258,8 @@ public class GogGamesActivity extends Activity {
                     }
                 });
                 StoreDownloadQueue.startGog(this, game, dlKey3);
-                cancelRef3[0] = () -> {
+                cancelRef3[0] = () ->
                     StoreDownloadQueue.cancel(GogGamesActivity.this, dlKey3);
-                    StoreDownloadQueue.removeListener(dlKey3);
-                };
                 }); // end showInstallConfirm
             });
             return; // dialog already shown above

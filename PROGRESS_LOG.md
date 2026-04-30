@@ -1177,4 +1177,29 @@ progress bar + current %, Cancel button, and live listener updates.
 - All 3 GameDetailActivity screens (GOG/Epic/Amazon) now restore active download state on open
 - findActiveEntry() bridges list/grid dlKey variants to the detail screen
 - store-update branch: latest commit `33701df`, all CI green
-- Branch is ready for device test + merge into 3.0
+
+### Pre-push — fix: cancel broken for all stores (2026-04-30)
+**Root cause 1 — GOG cancel completely non-functional:**
+`StoreDownloadQueue.startGog()` discarded the cancel `Runnable` returned by
+`GogDownloadManager.startDownload()` and stored a separate `AtomicBoolean` in `cancelFlags`.
+GOG's download thread has its own internal `AtomicBoolean` that was never connected to
+the one in `cancelFlags` — the thread never saw the cancel signal.
+
+**Root cause 2 — UI never resets after cancel on all stores (list/grid):**
+The cancel Runnable in list/grid cards called `StoreDownloadQueue.removeListener(dlKey)`
+BEFORE `onCancelled()` fired. When the thread eventually completed cancellation and
+`finish()` called `l.onCancelled()`, the listener was already gone → button stayed stuck
+as "Cancel".
+
+**Fixes:**
+- `StoreDownloadQueue`: replace `cancelFlags: ConcurrentHashMap<String, AtomicBoolean>` with
+  `cancelActions: ConcurrentHashMap<String, Runnable>`; `cancel()` now calls the Runnable
+- `finish()`: `if (!entry.active) return;` guard prevents double-call
+- `startGog()`: stores the Runnable returned by `GogDownloadManager.startDownload()`; GOG cancel
+  now correctly sets the internal `cancelled` flag, deletes partial files, and fires `onCancelled()`
+- `startEpic()` / `startAmazon()`: cancel action = `cancelled.set(true)` + immediate `finish()`
+  (for responsive UI reset); thread detects cancelled and deletes partial install dir + clears prefs
+- `GogDownloadManager.doDownload()`: after `runGen2()`/`runGen1()` return non-null + cancelled →
+  silent return (no `cb.onError()` call), preventing double-callback with the cancel Runnable
+- `GogGamesActivity`, `EpicGamesActivity`, `AmazonGamesActivity`: removed `removeListener()` from
+  all cancel Runnables — `onCancelled()` listener handles UI reset and self-removal

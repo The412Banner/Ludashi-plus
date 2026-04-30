@@ -596,10 +596,8 @@ public class EpicGamesActivity extends Activity {
                     }
                 });
                 StoreDownloadQueue.startEpic(this, game, dlKeyL);
-                cancelRef[0] = () -> {
+                cancelRef[0] = () ->
                     StoreDownloadQueue.cancel(EpicGamesActivity.this, dlKeyL);
-                    StoreDownloadQueue.removeListener(dlKeyL);
-                };
             });
         });
 
@@ -685,10 +683,8 @@ public class EpicGamesActivity extends Activity {
                         });
                     }
                 });
-                cancelRef[0] = () -> {
+                cancelRef[0] = () ->
                     StoreDownloadQueue.cancel(EpicGamesActivity.this, _dlKeyR);
-                    StoreDownloadQueue.removeListener(_dlKeyR);
-                };
             }
         }
         });
@@ -870,10 +866,8 @@ public class EpicGamesActivity extends Activity {
                     }
                 });
                 StoreDownloadQueue.startEpic(this, game, dlKeyG);
-                cancelRef[0] = () -> {
+                cancelRef[0] = () ->
                     StoreDownloadQueue.cancel(EpicGamesActivity.this, dlKeyG);
-                    StoreDownloadQueue.removeListener(dlKeyG);
-                };
             });
         });
 
@@ -935,10 +929,8 @@ public class EpicGamesActivity extends Activity {
                         });
                     }
                 });
-                cancelRef[0] = () -> {
+                cancelRef[0] = () ->
                     StoreDownloadQueue.cancel(EpicGamesActivity.this, _dlKeyRG);
-                    StoreDownloadQueue.removeListener(_dlKeyRG);
-                };
             }
         }
         tile.setOnLongClickListener(v -> {

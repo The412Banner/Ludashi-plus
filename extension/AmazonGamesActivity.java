@@ -688,10 +688,7 @@ public class AmazonGamesActivity extends Activity {
                         });
                     }
                 });
-                cancelRef[0] = () -> {
-                    StoreDownloadQueue.cancel(AmazonGamesActivity.this, _dlKeyR);
-                    StoreDownloadQueue.removeListener(_dlKeyR);
-                };
+                cancelRef[0] = () -> StoreDownloadQueue.cancel(AmazonGamesActivity.this, _dlKeyR);
             }
         }
         });
@@ -875,10 +872,7 @@ public class AmazonGamesActivity extends Activity {
                     }
                 });
                 StoreDownloadQueue.startAmazon(this, game, dlKeyG);
-                cancelRef[0] = () -> {
-                    StoreDownloadQueue.cancel(AmazonGamesActivity.this, dlKeyG);
-                    StoreDownloadQueue.removeListener(dlKeyG);
-                };
+                cancelRef[0] = () -> StoreDownloadQueue.cancel(AmazonGamesActivity.this, dlKeyG);
             });
         });
 
@@ -940,10 +934,7 @@ public class AmazonGamesActivity extends Activity {
                         });
                     }
                 });
-                cancelRef[0] = () -> {
-                    StoreDownloadQueue.cancel(AmazonGamesActivity.this, _dlKeyRG);
-                    StoreDownloadQueue.removeListener(_dlKeyRG);
-                };
+                cancelRef[0] = () -> StoreDownloadQueue.cancel(AmazonGamesActivity.this, _dlKeyRG);
             }
         }
         tile.setOnLongClickListener(v -> {

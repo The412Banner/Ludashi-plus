@@ -53,7 +53,7 @@ public class StoreDownloadQueue {
 
     private static final ConcurrentHashMap<String, DownloadEntry>   entries     = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, DownloadListener> listeners  = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, AtomicBoolean>   cancelFlags = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Runnable>        cancelActions = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Integer>         lastPct     = new ConcurrentHashMap<>();
 
     private static volatile Context            appCtx         = null;
@@ -68,8 +68,8 @@ public class StoreDownloadQueue {
     }
 
     public static void cancel(Context ctx, String dlKey) {
-        AtomicBoolean flag = cancelFlags.get(dlKey);
-        if (flag != null) flag.set(true);
+        Runnable action = cancelActions.get(dlKey);
+        if (action != null) action.run();
     }
 
     public static void addListener(String dlKey, DownloadListener l) {
@@ -100,13 +100,11 @@ public class StoreDownloadQueue {
     // ── GOG ──────────────────────────────────────────────────────────────────
 
     public static void startGog(Context ctx, GogGame game, String dlKey) {
-        AtomicBoolean cancelled = new AtomicBoolean(false);
-        cancelFlags.put(dlKey, cancelled);
         DownloadEntry entry = new DownloadEntry(dlKey, "GOG", game.title);
         entries.put(dlKey, entry);
         onDownloadStarted(ctx, dlKey);
 
-        GogDownloadManager.startDownload(ctx, game, new GogDownloadManager.Callback() {
+        Runnable cancelAction = GogDownloadManager.startDownload(ctx, game, new GogDownloadManager.Callback() {
             @Override public void onProgress(String msg, int pct) {
                 entry.status = msg; entry.percent = pct;
                 notifyProgress(dlKey, msg, pct);
@@ -126,16 +124,20 @@ public class StoreDownloadQueue {
                 finish(dlKey, entry, true, false, null, null);
             }
         });
+        cancelActions.put(dlKey, cancelAction);
     }
 
     // ── Epic ─────────────────────────────────────────────────────────────────
 
     public static void startEpic(Context ctx, EpicGame game, String dlKey) {
         AtomicBoolean cancelled = new AtomicBoolean(false);
-        cancelFlags.put(dlKey, cancelled);
         DownloadEntry entry = new DownloadEntry(dlKey, "EPIC", game.title);
         entries.put(dlKey, entry);
         onDownloadStarted(ctx, dlKey);
+        cancelActions.put(dlKey, () -> {
+            cancelled.set(true);
+            finish(dlKey, entry, true, false, null, null);
+        });
 
         new Thread(() -> {
             try {
@@ -168,7 +170,13 @@ public class StoreDownloadQueue {
                             updateNotification(dlKey, entry);
                         });
 
-                if (cancelled.get()) { finish(dlKey, entry, true, false, null, null); return; }
+                if (cancelled.get()) {
+                    deleteDir(installDir);
+                    ctx.getSharedPreferences("bh_epic_prefs", 0).edit()
+                            .remove("epic_dir_" + game.appName).apply();
+                    finish(dlKey, entry, true, false, null, null);
+                    return;
+                }
                 if (!ok) { finish(dlKey, entry, false, true, "Download failed", null); return; }
 
                 List<File> exeFiles = new ArrayList<>();
@@ -194,10 +202,13 @@ public class StoreDownloadQueue {
 
     public static void startAmazon(Context ctx, AmazonGame game, String dlKey) {
         AtomicBoolean cancelled = new AtomicBoolean(false);
-        cancelFlags.put(dlKey, cancelled);
         DownloadEntry entry = new DownloadEntry(dlKey, "AMAZON", game.title);
         entries.put(dlKey, entry);
         onDownloadStarted(ctx, dlKey);
+        cancelActions.put(dlKey, () -> {
+            cancelled.set(true);
+            finish(dlKey, entry, true, false, null, null);
+        });
 
         new Thread(() -> {
             try {
@@ -223,7 +234,13 @@ public class StoreDownloadQueue {
                         },
                         cancelled::get);
 
-                if (cancelled.get()) { finish(dlKey, entry, true, false, null, null); return; }
+                if (cancelled.get()) {
+                    deleteDir(installDir);
+                    ctx.getSharedPreferences("bh_amazon_prefs", 0).edit()
+                            .remove("amazon_dir_" + game.productId).apply();
+                    finish(dlKey, entry, true, false, null, null);
+                    return;
+                }
                 if (!ok) { finish(dlKey, entry, false, true, "Download failed", null); return; }
 
                 List<File> exeFiles = new ArrayList<>();
@@ -369,8 +386,9 @@ public class StoreDownloadQueue {
     private static void finish(String dlKey, DownloadEntry entry,
                                 boolean wasCancelled, boolean wasError,
                                 String errorMsg, String completePath) {
+        if (!entry.active) return;
         entry.active = false;
-        cancelFlags.remove(dlKey);
+        cancelActions.remove(dlKey);
         lastPct.remove(dlKey);
         postFinalNotification(dlKey, entry, wasCancelled, wasError);
         onDownloadFinished();
@@ -387,5 +405,14 @@ public class StoreDownloadQueue {
             if (l != null) l.onComplete(completePath);
         }
         new Handler(Looper.getMainLooper()).postDelayed(() -> entries.remove(dlKey), 60_000L);
+    }
+
+    private static void deleteDir(File dir) {
+        if (dir == null || !dir.exists()) return;
+        File[] files = dir.listFiles();
+        if (files != null) for (File f : files) {
+            if (f.isDirectory()) deleteDir(f); else f.delete();
+        }
+        dir.delete();
     }
 }
