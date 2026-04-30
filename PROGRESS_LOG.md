@@ -1171,3 +1171,10 @@ a stale Install button instead of the Cancel+progress UI. Each detail activity o
 
 Result: opening any game detail page while it is downloading (from any source) immediately shows
 progress bar + current %, Cancel button, and live listener updates.
+
+### Post-CI — fix: restore in-progress state in detail activity screens (2026-04-30)
+- Commit: `33701df` | CI run: 25185762756 ✅ success
+- All 3 GameDetailActivity screens (GOG/Epic/Amazon) now restore active download state on open
+- findActiveEntry() bridges list/grid dlKey variants to the detail screen
+- store-update branch: latest commit `33701df`, all CI green
+- Branch is ready for device test + merge into 3.0
