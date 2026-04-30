@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import android.content.Intent;
 
 /**
  * Epic Games library screen — mirrors AmazonGamesActivity structure.
