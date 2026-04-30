@@ -361,7 +361,6 @@ public class EpicGameDetailActivity extends Activity {
         _dlGame.artCover      = artCover != null ? artCover : "";
         StoreDownloadQueue.startEpic(this, _dlGame, dlKey);
         attachDownloadListener(dlKey);
-        startForegroundService(svc);
     }
 
     private void attachDownloadListener(String dlKey) {
@@ -548,7 +547,7 @@ public class EpicGameDetailActivity extends Activity {
         new Thread(() -> {
             String token = EpicCredentialStore.getValidAccessToken(this);
             long size = (token != null)
-                    ? EpicDownloadManager.fetchInstallSizeBytes(token, namespace, catalogItemId, appName)
+                    ? -1L // fetchInstallSizeBytes not available in Ludashi-plus
                     : -1;
             if (size > 0) prefs.edit().putLong("epic_size_" + appName, size).apply();
             uiHandler.post(() -> {
@@ -945,8 +944,7 @@ public class EpicGameDetailActivity extends Activity {
 
         cloudBrowseBtn = makeBtn("Browse", 0xFF333355);
         cloudBrowseBtn.setOnClickListener(v -> {
-            Intent intent = new Intent(this, FolderPickerActivity.class);
-            startActivityForResult(intent, REQUEST_FOLDER_PICKER);
+            /* FolderPickerActivity not available in Ludashi-plus */
         });
         LinearLayout.LayoutParams browseLp = new LinearLayout.LayoutParams(-2, dp(36));
         browseLp.leftMargin = dp(8);
