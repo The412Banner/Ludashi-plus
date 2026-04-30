@@ -330,6 +330,14 @@ public class EpicGamesActivity extends Activity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!allGames.isEmpty()) {
+            applyFilter(searchBar != null ? searchBar.getText().toString() : "");
+        }
+    }
+
     private void showGames(List<EpicGame> games) {
         allGames = games;
         applyFilter(searchBar != null ? searchBar.getText().toString() : "");
@@ -623,14 +631,20 @@ public class EpicGamesActivity extends Activity {
                 expandedSection = expandSection;
                 expandedArrow   = arrowTV;
             }
+        });
 
         // Restore in-progress UI if a download is already running for this game
         {
-            String _dlKeyR = "epic-" + game.appName + "-list";
-            StoreDownloadQueue.DownloadEntry _eR = StoreDownloadQueue.getEntry(_dlKeyR);
-            if (_eR != null && _eR.active) {
+            StoreDownloadQueue.DownloadEntry _eR = StoreDownloadQueue.findActiveEntry(
+                    "epic-" + game.appName + "-list",
+                    "epic-" + game.appName + "-grid",
+                    "epic_" + game.appName);
+            if (_eR != null) {
+                final String _dlKeyR = _eR.dlKey;
                 expandSection.setVisibility(View.VISIBLE);
                 arrowTV.setText("▲");
+                expandedSection = expandSection;
+                expandedArrow   = arrowTV;
                 actionBtn.setText("Cancel");
                 actionBtn.setBackgroundColor(0xFFCC3333);
                 progressBar.setVisibility(View.VISIBLE);
@@ -687,7 +701,6 @@ public class EpicGamesActivity extends Activity {
                     StoreDownloadQueue.cancel(EpicGamesActivity.this, _dlKeyR);
             }
         }
-        });
 
         gameListLayout.addView(card, cardLp);
     }
@@ -886,9 +899,12 @@ public class EpicGamesActivity extends Activity {
 
         // Restore in-progress UI if a download is already running for this game
         {
-            String _dlKeyRG = "epic-" + game.appName + "-grid";
-            StoreDownloadQueue.DownloadEntry _eRG = StoreDownloadQueue.getEntry(_dlKeyRG);
-            if (_eRG != null && _eRG.active) {
+            StoreDownloadQueue.DownloadEntry _eRG = StoreDownloadQueue.findActiveEntry(
+                    "epic-" + game.appName + "-list",
+                    "epic-" + game.appName + "-grid",
+                    "epic_" + game.appName);
+            if (_eRG != null) {
+                final String _dlKeyRG = _eRG.dlKey;
                 actionRow.setVisibility(View.VISIBLE);
                 actionBtn.setText("Cancel");
                 actionBtn.setBackgroundColor(0xFFCC3333);

@@ -280,6 +280,7 @@ public class StoreDownloadQueue {
     }
 
     private static void updateNotification(String dlKey, DownloadEntry e) {
+        if (!e.active) return;
         Context ctx = appCtx;
         if (ctx == null) return;
         // Throttle: skip update if percent unchanged

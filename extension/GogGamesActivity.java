@@ -383,6 +383,14 @@ public class GogGamesActivity extends Activity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!allGames.isEmpty()) {
+            applyFilter(searchBar != null ? searchBar.getText().toString() : "");
+        }
+    }
+
     private void showGames(List<GogGame> games) {
         Collections.sort(games, (a, b) -> a.title.compareToIgnoreCase(b.title));
         allGames = games;
@@ -730,14 +738,20 @@ public class GogGamesActivity extends Activity {
                 expandedSection = expandSection;
                 expandedArrow = arrowTV;
             }
+        });
 
         // Restore in-progress UI if a download is already running for this game
         {
-            String _dlKeyR = "gog-" + game.gameId + "-list";
-            StoreDownloadQueue.DownloadEntry _eR = StoreDownloadQueue.getEntry(_dlKeyR);
-            if (_eR != null && _eR.active) {
+            StoreDownloadQueue.DownloadEntry _eR = StoreDownloadQueue.findActiveEntry(
+                    "gog-" + game.gameId + "-list",
+                    "gog-" + game.gameId + "-grid",
+                    "gog_" + game.gameId);
+            if (_eR != null) {
+                final String _dlKeyR = _eR.dlKey;
                 expandSection.setVisibility(View.VISIBLE);
                 arrowTV.setText("▲");
+                expandedSection = expandSection;
+                expandedArrow = arrowTV;
                 actionBtn.setText("Cancel");
                 actionBtn.setBackgroundColor(0xFFCC3333);
                 progressBar.setVisibility(View.VISIBLE);
@@ -794,7 +808,6 @@ public class GogGamesActivity extends Activity {
                     StoreDownloadQueue.cancel(GogGamesActivity.this, _dlKeyR);
             }
         }
-        });
 
         gameListLayout.addView(card, cardLp);
     }
@@ -1042,9 +1055,12 @@ public class GogGamesActivity extends Activity {
 
         // Restore in-progress UI if a download is already running for this game
         {
-            String _dlKeyRG = "gog-" + game.gameId + "-grid";
-            StoreDownloadQueue.DownloadEntry _eRG = StoreDownloadQueue.getEntry(_dlKeyRG);
-            if (_eRG != null && _eRG.active) {
+            StoreDownloadQueue.DownloadEntry _eRG = StoreDownloadQueue.findActiveEntry(
+                    "gog-" + game.gameId + "-list",
+                    "gog-" + game.gameId + "-grid",
+                    "gog_" + game.gameId);
+            if (_eRG != null) {
+                final String _dlKeyRG = _eRG.dlKey;
                 actionRow.setVisibility(View.VISIBLE);
                 actionBtn.setText("Cancel");
                 actionBtn.setBackgroundColor(0xFFCC3333);
