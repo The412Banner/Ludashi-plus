@@ -1130,3 +1130,8 @@ Files changed: GogGamesActivity.java (3 sites), EpicGamesActivity.java (2 sites)
 AmazonGamesActivity.java (2 sites)
 
 CI pending.
+
+### Post-CI — fix: route all list/grid installs through StoreDownloadQueue (2026-04-30)
+- Commit: `ba5fe10` | CI run: 25183887535 ✅ success
+- All 7 download sites now go through StoreDownloadQueue → notifications fire for every install path
+- store-update branch: latest commit `ba5fe10`, all CI green
