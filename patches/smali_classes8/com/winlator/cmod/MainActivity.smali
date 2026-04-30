@@ -71,14 +71,14 @@
     .param p1, "dialog"    # Landroid/content/DialogInterface;
     .param p2, "which"    # I
 
-    .line 146
+    .line 156
     new-instance v0, Landroid/content/Intent;
 
     const-string v1, "android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION"
 
     invoke-direct {v0, v1}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V
 
-    .line 147
+    .line 157
     .local v0, "intent":Landroid/content/Intent;
     new-instance v1, Ljava/lang/StringBuilder;
 
@@ -108,17 +108,17 @@
 
     invoke-virtual {v0, v1}, Landroid/content/Intent;->setData(Landroid/net/Uri;)Landroid/content/Intent;
 
-    .line 148
+    .line 158
     invoke-virtual {p0, v0}, Lcom/winlator/cmod/MainActivity;->startActivity(Landroid/content/Intent;)V
 
-    .line 149
+    .line 159
     return-void
 .end method
 
 .method private requestAppPermissions()Z
     .locals 8
 
-    .line 182
+    .line 192
     const-string v0, "android.permission.WRITE_EXTERNAL_STORAGE"
 
     invoke-static {p0, v0}, Landroidx/core/content/ContextCompat;->checkSelfPermission(Landroid/content/Context;Ljava/lang/String;)I
@@ -138,7 +138,7 @@
     :cond_0
     move v1, v2
 
-    .line 183
+    .line 193
     .local v1, "hasWritePermission":Z
     :goto_0
     const-string v4, "android.permission.READ_EXTERNAL_STORAGE"
@@ -156,7 +156,7 @@
     :cond_1
     move v5, v2
 
-    .line 184
+    .line 194
     .local v5, "hasReadPermission":Z
     :goto_1
     sget v6, Landroid/os/Build$VERSION;->SDK_INT:I
@@ -182,7 +182,7 @@
     :goto_2
     move v6, v3
 
-    .line 186
+    .line 196
     .local v6, "hasManageStoragePermission":Z
     :goto_3
     if-eqz v1, :cond_4
@@ -191,16 +191,16 @@
 
     if-eqz v6, :cond_4
 
-    .line 187
+    .line 197
     return v2
 
-    .line 190
+    .line 200
     :cond_4
     if-eqz v1, :cond_5
 
     if-nez v5, :cond_6
 
-    .line 191
+    .line 201
     :cond_5
     const/4 v7, 0x2
 
@@ -212,11 +212,11 @@
 
     move-object v0, v7
 
-    .line 192
+    .line 202
     .local v0, "permissions":[Ljava/lang/String;
     invoke-static {p0, v0, v3}, Landroidx/core/app/ActivityCompat;->requestPermissions(Landroid/app/Activity;[Ljava/lang/String;I)V
 
-    .line 195
+    .line 205
     .end local v0    # "permissions":[Ljava/lang/String;
     :cond_6
     return v3
@@ -227,7 +227,7 @@
     .param p1, "menuItem"    # Landroid/view/MenuItem;
     .param p2, "color"    # I
 
-    .line 346
+    .line 353
     new-instance v0, Landroid/text/SpannableString;
 
     invoke-interface {p1}, Landroid/view/MenuItem;->getTitle()Ljava/lang/CharSequence;
@@ -236,7 +236,7 @@
 
     invoke-direct {v0, v1}, Landroid/text/SpannableString;-><init>(Ljava/lang/CharSequence;)V
 
-    .line 347
+    .line 354
     .local v0, "spanString":Landroid/text/SpannableString;
     new-instance v1, Landroid/text/style/ForegroundColorSpan;
 
@@ -250,10 +250,10 @@
 
     invoke-virtual {v0, v1, v2, v3, v2}, Landroid/text/SpannableString;->setSpan(Ljava/lang/Object;III)V
 
-    .line 348
+    .line 355
     invoke-interface {p1, v0}, Landroid/view/MenuItem;->setTitle(Ljava/lang/CharSequence;)Landroid/view/MenuItem;
 
-    .line 349
+    .line 356
     return-void
 .end method
 
@@ -262,7 +262,7 @@
     .param p1, "navigationView"    # Lcom/google/android/material/navigation/NavigationView;
     .param p2, "color"    # I
 
-    .line 332
+    .line 339
     const/4 v0, 0x0
 
     .local v0, "i":I
@@ -277,7 +277,7 @@
 
     if-ge v0, v1, :cond_1
 
-    .line 333
+    .line 340
     invoke-virtual {p1}, Lcom/google/android/material/navigation/NavigationView;->getMenu()Landroid/view/Menu;
 
     move-result-object v1
@@ -286,18 +286,18 @@
 
     move-result-object v1
 
-    .line 334
+    .line 341
     .local v1, "menuItem":Landroid/view/MenuItem;
     invoke-direct {p0, v1, p2}, Lcom/winlator/cmod/MainActivity;->setMenuItemTextColor(Landroid/view/MenuItem;I)V
 
-    .line 336
+    .line 343
     invoke-interface {v1}, Landroid/view/MenuItem;->hasSubMenu()Z
 
     move-result v2
 
     if-eqz v2, :cond_0
 
-    .line 337
+    .line 344
     const/4 v2, 0x0
 
     .local v2, "j":I
@@ -312,7 +312,7 @@
 
     if-ge v2, v3, :cond_0
 
-    .line 338
+    .line 345
     invoke-interface {v1}, Landroid/view/MenuItem;->getSubMenu()Landroid/view/SubMenu;
 
     move-result-object v3
@@ -321,17 +321,17 @@
 
     move-result-object v3
 
-    .line 339
+    .line 346
     .local v3, "subMenuItem":Landroid/view/MenuItem;
     invoke-direct {p0, v3, p2}, Lcom/winlator/cmod/MainActivity;->setMenuItemTextColor(Landroid/view/MenuItem;I)V
 
-    .line 337
+    .line 344
     .end local v3    # "subMenuItem":Landroid/view/MenuItem;
     add-int/lit8 v2, v2, 0x1
 
     goto :goto_1
 
-    .line 332
+    .line 339
     .end local v1    # "menuItem":Landroid/view/MenuItem;
     .end local v2    # "j":I
     :cond_0
@@ -339,7 +339,7 @@
 
     goto :goto_0
 
-    .line 343
+    .line 350
     .end local v0    # "i":I
     :cond_1
     return-void
@@ -350,23 +350,23 @@
     .param p1, "fragment"    # Landroidx/fragment/app/Fragment;
     .param p2, "reverse"    # Z
 
-    .line 262
+    .line 269
     invoke-virtual {p0}, Lcom/winlator/cmod/MainActivity;->getSupportFragmentManager()Landroidx/fragment/app/FragmentManager;
 
     move-result-object v0
 
-    .line 263
+    .line 270
     .local v0, "fragmentManager":Landroidx/fragment/app/FragmentManager;
-    const v1, 0x7f09008c
+    const v1, 0x7f090099
 
     if-eqz p2, :cond_0
 
-    .line 264
+    .line 271
     invoke-virtual {v0}, Landroidx/fragment/app/FragmentManager;->beginTransaction()Landroidx/fragment/app/FragmentTransaction;
 
     move-result-object v2
 
-    .line 265
+    .line 272
     const v3, 0x7f010022
 
     const v4, 0x7f010029
@@ -375,23 +375,23 @@
 
     move-result-object v2
 
-    .line 266
+    .line 273
     invoke-virtual {v2, v1, p1}, Landroidx/fragment/app/FragmentTransaction;->replace(ILandroidx/fragment/app/Fragment;)Landroidx/fragment/app/FragmentTransaction;
 
     move-result-object v1
 
-    .line 267
+    .line 274
     invoke-virtual {v1}, Landroidx/fragment/app/FragmentTransaction;->commit()I
 
     goto :goto_0
 
-    .line 269
+    .line 276
     :cond_0
     invoke-virtual {v0}, Landroidx/fragment/app/FragmentManager;->beginTransaction()Landroidx/fragment/app/FragmentTransaction;
 
     move-result-object v2
 
-    .line 270
+    .line 277
     const v3, 0x7f010025
 
     const v4, 0x7f010026
@@ -400,15 +400,15 @@
 
     move-result-object v2
 
-    .line 271
+    .line 278
     invoke-virtual {v2, v1, p1}, Landroidx/fragment/app/FragmentTransaction;->replace(ILandroidx/fragment/app/Fragment;)Landroidx/fragment/app/FragmentTransaction;
 
     move-result-object v1
 
-    .line 272
+    .line 279
     invoke-virtual {v1}, Landroidx/fragment/app/FragmentTransaction;->commit()I
 
-    .line 275
+    .line 282
     :goto_0
     iget-object v1, p0, Lcom/winlator/cmod/MainActivity;->drawerLayout:Landroidx/drawerlayout/widget/DrawerLayout;
 
@@ -416,14 +416,14 @@
 
     invoke-virtual {v1, v2}, Landroidx/drawerlayout/widget/DrawerLayout;->closeDrawer(I)V
 
-    .line 276
+    .line 283
     return-void
 .end method
 
 .method private showAboutDialog()V
     .locals 10
 
-    .line 279
+    .line 286
     const-string v0, "<br />"
 
     new-instance v1, Lcom/winlator/cmod/contentdialog/ContentDialog;
@@ -432,9 +432,9 @@
 
     invoke-direct {v1, p0, v2}, Lcom/winlator/cmod/contentdialog/ContentDialog;-><init>(Landroid/content/Context;I)V
 
-    .line 280
+    .line 287
     .local v1, "dialog":Lcom/winlator/cmod/contentdialog/ContentDialog;
-    const v2, 0x7f09009c
+    const v2, 0x7f0900a9
 
     invoke-virtual {v1, v2}, Lcom/winlator/cmod/contentdialog/ContentDialog;->findViewById(I)Landroid/view/View;
 
@@ -444,12 +444,12 @@
 
     invoke-virtual {v2, v3}, Landroid/view/View;->setVisibility(I)V
 
-    .line 282
+    .line 289
     iget-boolean v2, p0, Lcom/winlator/cmod/MainActivity;->isDarkMode:Z
 
     if-eqz v2, :cond_0
 
-    .line 283
+    .line 290
     invoke-virtual {v1}, Lcom/winlator/cmod/contentdialog/ContentDialog;->getWindow()Landroid/view/Window;
 
     move-result-object v2
@@ -460,7 +460,7 @@
 
     goto :goto_0
 
-    .line 285
+    .line 292
     :cond_0
     invoke-virtual {v1}, Lcom/winlator/cmod/contentdialog/ContentDialog;->getWindow()Landroid/view/Window;
 
@@ -470,7 +470,7 @@
 
     invoke-virtual {v2, v4}, Landroid/view/Window;->setBackgroundDrawableResource(I)V
 
-    .line 289
+    .line 296
     :goto_0
     :try_start_0
     invoke-virtual {p0}, Lcom/winlator/cmod/MainActivity;->getPackageManager()Landroid/content/pm/PackageManager;
@@ -487,9 +487,9 @@
 
     move-result-object v2
 
-    .line 291
+    .line 298
     .local v2, "pInfo":Landroid/content/pm/PackageInfo;
-    const v4, 0x7f090186
+    const v4, 0x7f09018f
 
     invoke-virtual {v1, v4}, Lcom/winlator/cmod/contentdialog/ContentDialog;->findViewById(I)Landroid/view/View;
 
@@ -497,7 +497,7 @@
 
     check-cast v4, Landroid/widget/TextView;
 
-    .line 292
+    .line 299
     .local v4, "tvWebpage":Landroid/widget/TextView;
     const-string v6, "<a href=\"https://www.winlator.org\">winlator.org</a>"
 
@@ -507,15 +507,15 @@
 
     invoke-virtual {v4, v6}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 293
+    .line 300
     invoke-static {}, Landroid/text/method/LinkMovementMethod;->getInstance()Landroid/text/method/MovementMethod;
 
     move-result-object v6
 
     invoke-virtual {v4, v6}, Landroid/widget/TextView;->setMovementMethod(Landroid/text/method/MovementMethod;)V
 
-    .line 295
-    const v6, 0x7f090131
+    .line 302
+    const v6, 0x7f09013d
 
     invoke-virtual {v1, v6}, Lcom/winlator/cmod/contentdialog/ContentDialog;->findViewById(I)Landroid/view/View;
 
@@ -527,7 +527,7 @@
 
     invoke-direct {v7}, Ljava/lang/StringBuilder;-><init>()V
 
-    const v8, 0x7f10026f
+    const v8, 0x7f100270
 
     invoke-virtual {p0, v8}, Lcom/winlator/cmod/MainActivity;->getString(I)Ljava/lang/String;
 
@@ -555,12 +555,12 @@
 
     invoke-virtual {v6, v7}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 297
+    .line 304
     const/16 v6, 0xf
 
     new-array v6, v6, [Ljava/lang/CharSequence;
 
-    const-string v7, "Winlator Cmod by coffincolors, me (<a href=\"https://github.com/coffincolors/winlator\">Fork</a>, <a href=\"https://github.com/Pipetto-crypto/winlator\">Fork</a>)"
+    const-string v7, "Winlator Bionic Ludashi by StevenMXZ,thanks to PissBlaster649/Pypetto-Crypto (<a href=\"https://github.com/StevenMXZ/Winlator-Ludashi\">Fork</a>, <a href=\"https://github.com/Pipetto-crypto/winlator\">Fork</a>)"
 
     aput-object v7, v6, v5
 
@@ -650,9 +650,9 @@
 
     move-result-object v3
 
-    .line 315
+    .line 322
     .local v3, "creditsAndThirdPartyAppsHTML":Ljava/lang/String;
-    const v6, 0x7f09013d
+    const v6, 0x7f090149
 
     invoke-virtual {v1, v6}, Lcom/winlator/cmod/contentdialog/ContentDialog;->findViewById(I)Landroid/view/View;
 
@@ -660,7 +660,7 @@
 
     check-cast v6, Landroid/widget/TextView;
 
-    .line 316
+    .line 323
     .local v6, "tvCreditsAndThirdPartyApps":Landroid/widget/TextView;
     invoke-static {v3, v5}, Landroid/text/Html;->fromHtml(Ljava/lang/String;I)Landroid/text/Spanned;
 
@@ -668,14 +668,14 @@
 
     invoke-virtual {v6, v7}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 317
+    .line 324
     invoke-static {}, Landroid/text/method/LinkMovementMethod;->getInstance()Landroid/text/method/MovementMethod;
 
     move-result-object v7
 
     invoke-virtual {v6, v7}, Landroid/widget/TextView;->setMovementMethod(Landroid/text/method/MovementMethod;)V
 
-    .line 319
+    .line 326
     new-array v7, v8, [Ljava/lang/CharSequence;
 
     const-string v8, "longjunyu2\'s <a href=\"https://github.com/longjunyu2/winlator/tree/use-glibc-instead-of-proot\">(GLIBC Fork)</a>"
@@ -686,9 +686,9 @@
 
     move-result-object v0
 
-    .line 321
+    .line 328
     .local v0, "glibcExpVersionForkHTML":Ljava/lang/String;
-    const v7, 0x7f090159
+    const v7, 0x7f090164
 
     invoke-virtual {v1, v7}, Lcom/winlator/cmod/contentdialog/ContentDialog;->findViewById(I)Landroid/view/View;
 
@@ -696,7 +696,7 @@
 
     check-cast v7, Landroid/widget/TextView;
 
-    .line 322
+    .line 329
     .local v7, "tvGlibcExpVersionFork":Landroid/widget/TextView;
     invoke-static {v0, v5}, Landroid/text/Html;->fromHtml(Ljava/lang/String;I)Landroid/text/Spanned;
 
@@ -704,7 +704,7 @@
 
     invoke-virtual {v7, v5}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 323
+    .line 330
     invoke-static {}, Landroid/text/method/LinkMovementMethod;->getInstance()Landroid/text/method/MovementMethod;
 
     move-result-object v5
@@ -713,7 +713,7 @@
     :try_end_0
     .catch Landroid/content/pm/PackageManager$NameNotFoundException; {:try_start_0 .. :try_end_0} :catch_0
 
-    .line 326
+    .line 333
     .end local v0    # "glibcExpVersionForkHTML":Ljava/lang/String;
     .end local v2    # "pInfo":Landroid/content/pm/PackageInfo;
     .end local v3    # "creditsAndThirdPartyAppsHTML":Ljava/lang/String;
@@ -722,39 +722,39 @@
     .end local v7    # "tvGlibcExpVersionFork":Landroid/widget/TextView;
     goto :goto_1
 
-    .line 324
+    .line 331
     :catch_0
     move-exception v0
 
-    .line 325
+    .line 332
     .local v0, "e":Landroid/content/pm/PackageManager$NameNotFoundException;
     invoke-virtual {v0}, Landroid/content/pm/PackageManager$NameNotFoundException;->printStackTrace()V
 
-    .line 328
+    .line 335
     .end local v0    # "e":Landroid/content/pm/PackageManager$NameNotFoundException;
     :goto_1
     invoke-virtual {v1}, Lcom/winlator/cmod/contentdialog/ContentDialog;->show()V
 
-    .line 329
+    .line 336
     return-void
 .end method
 
 .method private showAllFilesAccessDialog()V
     .locals 3
 
-    .line 142
+    .line 152
     new-instance v0, Landroid/app/AlertDialog$Builder;
 
     invoke-direct {v0, p0}, Landroid/app/AlertDialog$Builder;-><init>(Landroid/content/Context;)V
 
-    .line 143
+    .line 153
     const-string v1, "All Files Access Required"
 
     invoke-virtual {v0, v1}, Landroid/app/AlertDialog$Builder;->setTitle(Ljava/lang/CharSequence;)Landroid/app/AlertDialog$Builder;
 
     move-result-object v0
 
-    .line 144
+    .line 154
     const-string v1, "In order to grant access to additional storage devices such as USB storage device, the All Files Access permission must be granted. Press Okay to grant All Files Access in your Android Settings."
 
     invoke-virtual {v0, v1}, Landroid/app/AlertDialog$Builder;->setMessage(Ljava/lang/CharSequence;)Landroid/app/AlertDialog$Builder;
@@ -765,14 +765,14 @@
 
     invoke-direct {v1, p0}, Lcom/winlator/cmod/MainActivity$$ExternalSyntheticLambda0;-><init>(Lcom/winlator/cmod/MainActivity;)V
 
-    .line 145
+    .line 155
     const-string v2, "Okay"
 
     invoke-virtual {v0, v2, v1}, Landroid/app/AlertDialog$Builder;->setPositiveButton(Ljava/lang/CharSequence;Landroid/content/DialogInterface$OnClickListener;)Landroid/app/AlertDialog$Builder;
 
     move-result-object v0
 
-    .line 150
+    .line 160
     const-string v1, "Cancel"
 
     const/4 v2, 0x0
@@ -781,10 +781,10 @@
 
     move-result-object v0
 
-    .line 151
+    .line 161
     invoke-virtual {v0}, Landroid/app/AlertDialog$Builder;->show()Landroid/app/AlertDialog;
 
-    .line 152
+    .line 162
     return-void
 .end method
 
@@ -796,10 +796,10 @@
     .param p2, "resultCode"    # I
     .param p3, "data"    # Landroid/content/Intent;
 
-    .line 353
+    .line 360
     invoke-super {p0, p1, p2, p3}, Landroidx/appcompat/app/AppCompatActivity;->onActivityResult(IILandroid/content/Intent;)V
 
-    .line 354
+    .line 361
     const/4 v0, 0x5
 
     if-ne p1, v0, :cond_1
@@ -808,7 +808,7 @@
 
     if-ne p2, v0, :cond_1
 
-    .line 355
+    .line 362
     invoke-virtual {p3}, Landroid/content/Intent;->getData()Landroid/net/Uri;
 
     move-result-object v0
@@ -819,19 +819,19 @@
 
     move-result-object v0
 
-    .line 356
+    .line 363
     .local v0, "bitmap":Landroid/graphics/Bitmap;
     if-nez v0, :cond_0
 
     return-void
 
-    .line 357
+    .line 364
     :cond_0
     invoke-static {p0}, Lcom/winlator/cmod/core/WineThemeManager;->getUserWallpaperFile(Landroid/content/Context;)Ljava/io/File;
 
     move-result-object v1
 
-    .line 358
+    .line 365
     .local v1, "userWallpaperFile":Ljava/io/File;
     sget-object v2, Landroid/graphics/Bitmap$CompressFormat;->PNG:Landroid/graphics/Bitmap$CompressFormat;
 
@@ -839,7 +839,7 @@
 
     invoke-static {v0, v1, v2, v3}, Lcom/winlator/cmod/core/ImageUtils;->save(Landroid/graphics/Bitmap;Ljava/io/File;Landroid/graphics/Bitmap$CompressFormat;I)Z
 
-    .line 360
+    .line 367
     .end local v0    # "bitmap":Landroid/graphics/Bitmap;
     .end local v1    # "userWallpaperFile":Ljava/io/File;
     :cond_1
@@ -849,18 +849,18 @@
 .method public onBackPressed()V
     .locals 5
 
-    .line 167
+    .line 177
     invoke-virtual {p0}, Lcom/winlator/cmod/MainActivity;->getSupportFragmentManager()Landroidx/fragment/app/FragmentManager;
 
     move-result-object v0
 
-    .line 168
+    .line 178
     .local v0, "fragmentManager":Landroidx/fragment/app/FragmentManager;
     invoke-virtual {v0}, Landroidx/fragment/app/FragmentManager;->getFragments()Ljava/util/List;
 
     move-result-object v1
 
-    .line 169
+    .line 179
     .local v1, "fragments":Ljava/util/List;, "Ljava/util/List<Landroidx/fragment/app/Fragment;>;"
     invoke-interface {v1}, Ljava/util/List;->iterator()Ljava/util/Iterator;
 
@@ -879,7 +879,7 @@
 
     check-cast v3, Landroidx/fragment/app/Fragment;
 
-    .line 170
+    .line 180
     .local v3, "fragment":Landroidx/fragment/app/Fragment;
     instance-of v4, v3, Lcom/winlator/cmod/ContainersFragment;
 
@@ -891,24 +891,24 @@
 
     if-eqz v4, :cond_0
 
-    .line 171
+    .line 181
     invoke-virtual {p0}, Lcom/winlator/cmod/MainActivity;->finish()V
 
-    .line 172
+    .line 182
     return-void
 
-    .line 174
+    .line 184
     .end local v3    # "fragment":Landroidx/fragment/app/Fragment;
     :cond_0
     goto :goto_0
 
-    .line 175
+    .line 185
     :cond_1
     iget-boolean v2, p0, Lcom/winlator/cmod/MainActivity;->editInputControls:Z
 
     if-nez v2, :cond_2
 
-    .line 176
+    .line 186
     new-instance v2, Lcom/winlator/cmod/ContainersFragment;
 
     invoke-direct {v2}, Lcom/winlator/cmod/ContainersFragment;-><init>()V
@@ -919,17 +919,17 @@
 
     goto :goto_1
 
-    .line 178
+    .line 188
     :cond_2
     invoke-super {p0}, Landroidx/appcompat/app/AppCompatActivity;->onBackPressed()V
 
-    .line 179
+    .line 189
     :goto_1
     return-void
 .end method
 
 .method protected onCreate(Landroid/os/Bundle;)V
-    .locals 13
+    .locals 14
     .param p1, "savedInstanceState"    # Landroid/os/Bundle;
 
     .line 68
@@ -975,7 +975,9 @@
     .line 80
     const-string v3, "dark_mode"
 
-    invoke-interface {v0, v3, v2}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
+    const/4 v4, 0x1
+
+    invoke-interface {v0, v3, v4}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
 
     move-result v3
 
@@ -1006,7 +1008,7 @@
     invoke-virtual {p0, v3}, Lcom/winlator/cmod/MainActivity;->setContentView(I)V
 
     .line 90
-    const v3, 0x7f09007e
+    const v3, 0x7f09008b
 
     invoke-virtual {p0, v3}, Lcom/winlator/cmod/MainActivity;->findViewById(I)Landroid/view/View;
 
@@ -1017,7 +1019,7 @@
     iput-object v3, p0, Lcom/winlator/cmod/MainActivity;->drawerLayout:Landroidx/drawerlayout/widget/DrawerLayout;
 
     .line 91
-    const v3, 0x7f0900c7
+    const v3, 0x7f0900d6
 
     invoke-virtual {p0, v3}, Lcom/winlator/cmod/MainActivity;->findViewById(I)Landroid/view/View;
 
@@ -1030,34 +1032,32 @@
     invoke-virtual {v3, p0}, Lcom/google/android/material/navigation/NavigationView;->setNavigationItemSelectedListener(Lcom/google/android/material/navigation/NavigationView$OnNavigationItemSelectedListener;)V
 
     .line 94
-    const v4, 0x7f09018d
+    const v5, 0x7f090196
 
-    invoke-virtual {p0, v4}, Lcom/winlator/cmod/MainActivity;->findViewById(I)Landroid/view/View;
+    invoke-virtual {p0, v5}, Lcom/winlator/cmod/MainActivity;->findViewById(I)Landroid/view/View;
 
-    move-result-object v4
+    move-result-object v5
 
-    check-cast v4, Landroidx/appcompat/widget/Toolbar;
+    check-cast v5, Landroidx/appcompat/widget/Toolbar;
 
-    invoke-virtual {p0, v4}, Lcom/winlator/cmod/MainActivity;->setSupportActionBar(Landroidx/appcompat/widget/Toolbar;)V
+    invoke-virtual {p0, v5}, Lcom/winlator/cmod/MainActivity;->setSupportActionBar(Landroidx/appcompat/widget/Toolbar;)V
 
     .line 95
     invoke-virtual {p0}, Lcom/winlator/cmod/MainActivity;->getSupportActionBar()Landroidx/appcompat/app/ActionBar;
 
-    move-result-object v4
+    move-result-object v5
 
     .line 96
-    .local v4, "actionBar":Landroidx/appcompat/app/ActionBar;
-    const v5, 0x7f080118
+    .local v5, "actionBar":Landroidx/appcompat/app/ActionBar;
+    const v6, 0x7f08011a
 
-    const/4 v6, 0x1
-
-    if-eqz v4, :cond_2
+    if-eqz v5, :cond_2
 
     .line 97
-    invoke-virtual {v4, v6}, Landroidx/appcompat/app/ActionBar;->setDisplayHomeAsUpEnabled(Z)V
+    invoke-virtual {v5, v4}, Landroidx/appcompat/app/ActionBar;->setDisplayHomeAsUpEnabled(Z)V
 
     .line 98
-    invoke-virtual {v4, v5}, Landroidx/appcompat/app/ActionBar;->setHomeAsUpIndicator(I)V
+    invoke-virtual {v5, v6}, Landroidx/appcompat/app/ActionBar;->setHomeAsUpIndicator(I)V
 
     .line 101
     :cond_2
@@ -1124,34 +1124,34 @@
     if-eqz v10, :cond_5
 
     .line 113
-    const-string v5, "selected_profile_id"
+    const-string v4, "selected_profile_id"
 
-    invoke-virtual {v9, v5, v2}, Landroid/content/Intent;->getIntExtra(Ljava/lang/String;I)I
+    invoke-virtual {v9, v4, v2}, Landroid/content/Intent;->getIntExtra(Ljava/lang/String;I)I
 
     move-result v2
 
     iput v2, p0, Lcom/winlator/cmod/MainActivity;->selectedProfileId:I
 
     .line 114
-    const v2, 0x7f080116
+    const v2, 0x7f080118
 
-    invoke-virtual {v4, v2}, Landroidx/appcompat/app/ActionBar;->setHomeAsUpIndicator(I)V
+    invoke-virtual {v5, v2}, Landroidx/appcompat/app/ActionBar;->setHomeAsUpIndicator(I)V
 
     .line 115
     invoke-virtual {v3}, Lcom/google/android/material/navigation/NavigationView;->getMenu()Landroid/view/Menu;
 
     move-result-object v2
 
-    const v5, 0x7f090271
+    const v4, 0x7f090279
 
-    invoke-interface {v2, v5}, Landroid/view/Menu;->findItem(I)Landroid/view/MenuItem;
+    invoke-interface {v2, v4}, Landroid/view/Menu;->findItem(I)Landroid/view/MenuItem;
 
     move-result-object v2
 
     invoke-virtual {p0, v2}, Lcom/winlator/cmod/MainActivity;->onNavigationItemSelected(Landroid/view/MenuItem;)Z
 
     .line 116
-    invoke-virtual {v3, v5}, Lcom/google/android/material/navigation/NavigationView;->setCheckedItem(I)V
+    invoke-virtual {v3, v4}, Lcom/google/android/material/navigation/NavigationView;->setCheckedItem(I)V
 
     goto :goto_3
 
@@ -1163,91 +1163,131 @@
 
     move-result v10
 
-    .line 119
+    .line 120
     .local v10, "selectedMenuItemId":I
     if-lez v10, :cond_6
 
+    .line 121
     move v11, v10
+
+    .local v11, "menuItemId":I
+    goto :goto_2
+
+    .line 123
+    .end local v11    # "menuItemId":I
+    :cond_6
+    iget-object v11, p0, Lcom/winlator/cmod/MainActivity;->containerManager:Lcom/winlator/cmod/container/ContainerManager;
+
+    invoke-virtual {v11}, Lcom/winlator/cmod/container/ContainerManager;->loadShortcuts()Ljava/util/ArrayList;
+
+    move-result-object v11
+
+    invoke-virtual {v11}, Ljava/util/ArrayList;->isEmpty()Z
+
+    move-result v11
+
+    if-eqz v11, :cond_7
+
+    const v11, 0x7f090277
 
     goto :goto_2
 
-    :cond_6
-    const v11, 0x7f09026e
-
-    .line 121
-    .local v11, "menuItemId":I
-    :goto_2
-    invoke-virtual {v4, v5}, Landroidx/appcompat/app/ActionBar;->setHomeAsUpIndicator(I)V
-
-    .line 122
-    invoke-virtual {v3}, Lcom/google/android/material/navigation/NavigationView;->getMenu()Landroid/view/Menu;
-
-    move-result-object v5
-
-    invoke-interface {v5, v11}, Landroid/view/Menu;->findItem(I)Landroid/view/MenuItem;
-
-    move-result-object v5
-
-    invoke-virtual {p0, v5}, Lcom/winlator/cmod/MainActivity;->onNavigationItemSelected(Landroid/view/MenuItem;)Z
-
-    .line 123
-    invoke-virtual {v3, v11}, Lcom/google/android/material/navigation/NavigationView;->setCheckedItem(I)V
-
-    .line 125
-    invoke-direct {p0}, Lcom/winlator/cmod/MainActivity;->requestAppPermissions()Z
-
-    move-result v5
-
-    if-nez v5, :cond_7
+    :cond_7
+    const v11, 0x7f09027b
 
     .line 126
-    invoke-static {p0}, Lcom/winlator/cmod/xenvironment/ImageFsInstaller;->installIfNeeded(Lcom/winlator/cmod/MainActivity;)V
+    .restart local v11    # "menuItemId":I
+    :goto_2
+    invoke-virtual {v5, v6}, Landroidx/appcompat/app/ActionBar;->setHomeAsUpIndicator(I)V
+
+    .line 127
+    invoke-virtual {v3}, Lcom/google/android/material/navigation/NavigationView;->getMenu()Landroid/view/Menu;
+
+    move-result-object v6
+
+    invoke-interface {v6, v11}, Landroid/view/Menu;->findItem(I)Landroid/view/MenuItem;
+
+    move-result-object v6
+
+    .line 128
+    .local v6, "initialItem":Landroid/view/MenuItem;
+    if-nez v6, :cond_8
 
     .line 129
-    :cond_7
-    sget v5, Landroid/os/Build$VERSION;->SDK_INT:I
-
-    const/16 v12, 0x1e
-
-    if-lt v5, v12, :cond_8
-
-    invoke-static {}, Landroid/os/Environment;->isExternalStorageManager()Z
-
-    move-result v5
-
-    if-nez v5, :cond_8
+    const v11, 0x7f090277
 
     .line 130
-    invoke-direct {p0}, Lcom/winlator/cmod/MainActivity;->showAllFilesAccessDialog()V
+    invoke-virtual {v3}, Lcom/google/android/material/navigation/NavigationView;->getMenu()Landroid/view/Menu;
+
+    move-result-object v12
+
+    invoke-interface {v12, v11}, Landroid/view/Menu;->findItem(I)Landroid/view/MenuItem;
+
+    move-result-object v6
+
+    .line 132
+    :cond_8
+    invoke-virtual {p0, v6}, Lcom/winlator/cmod/MainActivity;->onNavigationItemSelected(Landroid/view/MenuItem;)Z
 
     .line 133
-    :cond_8
-    sget v5, Landroid/os/Build$VERSION;->SDK_INT:I
+    invoke-virtual {v3, v11}, Lcom/google/android/material/navigation/NavigationView;->setCheckedItem(I)V
 
-    const/16 v12, 0x21
-
-    if-lt v5, v12, :cond_9
-
-    .line 134
-    const-string v5, "android.permission.POST_NOTIFICATIONS"
-
-    invoke-static {p0, v5}, Landroidx/core/app/ActivityCompat;->checkSelfPermission(Landroid/content/Context;Ljava/lang/String;)I
+    .line 135
+    invoke-direct {p0}, Lcom/winlator/cmod/MainActivity;->requestAppPermissions()Z
 
     move-result v12
 
-    if-eqz v12, :cond_9
+    if-nez v12, :cond_9
 
-    .line 135
-    new-array v6, v6, [Ljava/lang/String;
-
-    aput-object v5, v6, v2
-
-    invoke-virtual {p0, v6, v2}, Lcom/winlator/cmod/MainActivity;->requestPermissions([Ljava/lang/String;I)V
+    .line 136
+    invoke-static {p0}, Lcom/winlator/cmod/xenvironment/ImageFsInstaller;->installIfNeeded(Lcom/winlator/cmod/MainActivity;)V
 
     .line 139
+    :cond_9
+    sget v12, Landroid/os/Build$VERSION;->SDK_INT:I
+
+    const/16 v13, 0x1e
+
+    if-lt v12, v13, :cond_a
+
+    invoke-static {}, Landroid/os/Environment;->isExternalStorageManager()Z
+
+    move-result v12
+
+    if-nez v12, :cond_a
+
+    .line 140
+    invoke-direct {p0}, Lcom/winlator/cmod/MainActivity;->showAllFilesAccessDialog()V
+
+    .line 143
+    :cond_a
+    sget v12, Landroid/os/Build$VERSION;->SDK_INT:I
+
+    const/16 v13, 0x21
+
+    if-lt v12, v13, :cond_b
+
+    .line 144
+    const-string v12, "android.permission.POST_NOTIFICATIONS"
+
+    invoke-static {p0, v12}, Landroidx/core/app/ActivityCompat;->checkSelfPermission(Landroid/content/Context;Ljava/lang/String;)I
+
+    move-result v13
+
+    if-eqz v13, :cond_b
+
+    .line 145
+    new-array v4, v4, [Ljava/lang/String;
+
+    aput-object v12, v4, v2
+
+    invoke-virtual {p0, v4, v2}, Lcom/winlator/cmod/MainActivity;->requestPermissions([Ljava/lang/String;I)V
+
+    .line 149
+    .end local v6    # "initialItem":Landroid/view/MenuItem;
     .end local v10    # "selectedMenuItemId":I
     .end local v11    # "menuItemId":I
-    :cond_9
+    :cond_b
     :goto_3
     return-void
 .end method
@@ -1256,12 +1296,12 @@
     .locals 5
     .param p1, "item"    # Landroid/view/MenuItem;
 
-    .line 227
+    .line 237
     invoke-virtual {p0}, Lcom/winlator/cmod/MainActivity;->getSupportFragmentManager()Landroidx/fragment/app/FragmentManager;
 
     move-result-object v0
 
-    .line 228
+    .line 238
     .local v0, "fragmentManager":Landroidx/fragment/app/FragmentManager;
     invoke-virtual {v0}, Landroidx/fragment/app/FragmentManager;->getBackStackEntryCount()I
 
@@ -1271,12 +1311,12 @@
 
     if-lez v1, :cond_0
 
-    .line 229
+    .line 239
     const/4 v1, 0x0
 
     invoke-virtual {v0, v1, v2}, Landroidx/fragment/app/FragmentManager;->popBackStack(Ljava/lang/String;I)V
 
-    .line 232
+    .line 242
     :cond_0
     invoke-interface {p1}, Landroid/view/MenuItem;->getItemId()I
 
@@ -1284,20 +1324,20 @@
 
     const/4 v3, 0x0
 
-    # Game Stores: GOG (0x7f09038a)
-    const v4, 0x7f09038a
+    # Game Stores: GOG (0x7f090392)
+    const v4, 0x7f090392
     if-eq v1, v4, :start_gog
 
-    # Game Stores: Epic Games (0x7f090389)
-    const v4, 0x7f090389
+    # Game Stores: Epic Games (0x7f090391)
+    const v4, 0x7f090391
     if-eq v1, v4, :start_epic
 
-    # Game Stores: Amazon Games (0x7f090388)
-    const v4, 0x7f090388
+    # Game Stores: Amazon Games (0x7f090390)
+    const v4, 0x7f090390
     if-eq v1, v4, :start_amazon
 
-    # Game Stores: Steam (0x7f09038b)
-    const v4, 0x7f09038b
+    # Game Stores: Steam (0x7f090393)
+    const v4, 0x7f090393
     if-eq v1, v4, :start_steam
 
     packed-switch v1, :pswitch_data_0
@@ -1332,7 +1372,7 @@
     invoke-virtual {p0, v1}, Lcom/winlator/cmod/MainActivity;->startActivity(Landroid/content/Intent;)V
     goto :goto_0
 
-    .line 234
+    .line 244
     :pswitch_0
     new-instance v1, Lcom/winlator/cmod/ShortcutsFragment;
 
@@ -1340,10 +1380,10 @@
 
     invoke-direct {p0, v1, v3}, Lcom/winlator/cmod/MainActivity;->show(Landroidx/fragment/app/Fragment;Z)V
 
-    .line 235
+    .line 245
     goto :goto_0
 
-    .line 249
+    .line 256
     :pswitch_1
     new-instance v1, Lcom/winlator/cmod/SettingsFragment;
 
@@ -1351,10 +1391,10 @@
 
     invoke-direct {p0, v1, v3}, Lcom/winlator/cmod/MainActivity;->show(Landroidx/fragment/app/Fragment;Z)V
 
-    .line 250
+    .line 257
     goto :goto_0
 
-    .line 240
+    .line 250
     :pswitch_2
     new-instance v1, Lcom/winlator/cmod/InputControlsFragment;
 
@@ -1364,10 +1404,10 @@
 
     invoke-direct {p0, v1, v3}, Lcom/winlator/cmod/MainActivity;->show(Landroidx/fragment/app/Fragment;Z)V
 
-    .line 241
+    .line 251
     goto :goto_0
 
-    .line 255
+    .line 262
     :pswitch_3
     new-instance v1, Lcom/winlator/cmod/FileManagerFragment;
 
@@ -1377,53 +1417,43 @@
 
     goto :goto_0
 
-    .line 243
+    .line 247
     :pswitch_4
-    new-instance v1, Lcom/winlator/cmod/ContentsFragment;
-
-    invoke-direct {v1}, Lcom/winlator/cmod/ContentsFragment;-><init>()V
-
-    invoke-direct {p0, v1, v3}, Lcom/winlator/cmod/MainActivity;->show(Landroidx/fragment/app/Fragment;Z)V
-
-    .line 244
-    goto :goto_0
-
-    .line 237
-    :pswitch_5
     new-instance v1, Lcom/winlator/cmod/ContainersFragment;
 
     invoke-direct {v1}, Lcom/winlator/cmod/ContainersFragment;-><init>()V
 
     invoke-direct {p0, v1, v3}, Lcom/winlator/cmod/MainActivity;->show(Landroidx/fragment/app/Fragment;Z)V
 
-    .line 238
+    .line 248
     goto :goto_0
 
-    .line 246
-    :pswitch_6
+    .line 253
+    :pswitch_5
     new-instance v1, Lcom/winlator/cmod/AdrenotoolsFragment;
 
     invoke-direct {v1}, Lcom/winlator/cmod/AdrenotoolsFragment;-><init>()V
 
     invoke-direct {p0, v1, v3}, Lcom/winlator/cmod/MainActivity;->show(Landroidx/fragment/app/Fragment;Z)V
 
-    .line 247
+    .line 254
     goto :goto_0
 
-    .line 252
-    :pswitch_7
+    .line 259
+    :pswitch_6
     invoke-direct {p0}, Lcom/winlator/cmod/MainActivity;->showAboutDialog()V
 
-    .line 253
+    .line 260
     nop
 
-    .line 258
+    .line 265
     :goto_0
     return v2
 
+    nop
+
     :pswitch_data_0
-    .packed-switch 0x7f09026c
-        :pswitch_7
+    .packed-switch 0x7f090275
         :pswitch_6
         :pswitch_5
         :pswitch_4
@@ -1438,7 +1468,7 @@
     .locals 3
     .param p1, "menuItem"    # Landroid/view/MenuItem;
 
-    .line 200
+    .line 210
     invoke-interface {p1}, Landroid/view/MenuItem;->getItemId()I
 
     move-result v0
@@ -1447,20 +1477,20 @@
 
     if-ne v0, v1, :cond_2
 
-    .line 201
+    .line 211
     iget-boolean v0, p0, Lcom/winlator/cmod/MainActivity;->editInputControls:Z
 
     const/4 v1, 0x1
 
     if-eqz v0, :cond_0
 
-    .line 202
+    .line 212
     invoke-virtual {p0}, Lcom/winlator/cmod/MainActivity;->onBackPressed()V
 
-    .line 203
+    .line 213
     return v1
 
-    .line 206
+    .line 216
     :cond_0
     iget-object v0, p0, Lcom/winlator/cmod/MainActivity;->drawerLayout:Landroidx/drawerlayout/widget/DrawerLayout;
 
@@ -1472,24 +1502,24 @@
 
     if-eqz v0, :cond_1
 
-    .line 207
+    .line 217
     iget-object v0, p0, Lcom/winlator/cmod/MainActivity;->drawerLayout:Landroidx/drawerlayout/widget/DrawerLayout;
 
     invoke-virtual {v0, v2}, Landroidx/drawerlayout/widget/DrawerLayout;->closeDrawer(I)V
 
     goto :goto_0
 
-    .line 209
+    .line 219
     :cond_1
     iget-object v0, p0, Lcom/winlator/cmod/MainActivity;->drawerLayout:Landroidx/drawerlayout/widget/DrawerLayout;
 
     invoke-virtual {v0, v2}, Landroidx/drawerlayout/widget/DrawerLayout;->openDrawer(I)V
 
-    .line 211
+    .line 221
     :goto_0
     return v1
 
-    .line 213
+    .line 223
     :cond_2
     invoke-super {p0, p1}, Landroidx/appcompat/app/AppCompatActivity;->onOptionsItemSelected(Landroid/view/MenuItem;)Z
 
@@ -1504,15 +1534,15 @@
     .param p2, "permissions"    # [Ljava/lang/String;
     .param p3, "grantResults"    # [I
 
-    .line 156
+    .line 166
     invoke-super {p0, p1, p2, p3}, Landroidx/appcompat/app/AppCompatActivity;->onRequestPermissionsResult(I[Ljava/lang/String;[I)V
 
-    .line 157
+    .line 167
     const/4 v0, 0x1
 
     if-ne p1, v0, :cond_1
 
-    .line 158
+    .line 168
     array-length v0, p3
 
     if-lez v0, :cond_0
@@ -1523,16 +1553,16 @@
 
     if-nez v0, :cond_0
 
-    .line 159
+    .line 169
     invoke-static {p0}, Lcom/winlator/cmod/xenvironment/ImageFsInstaller;->installIfNeeded(Lcom/winlator/cmod/MainActivity;)V
 
     goto :goto_0
 
-    .line 161
+    .line 171
     :cond_0
     invoke-virtual {p0}, Lcom/winlator/cmod/MainActivity;->finish()V
 
-    .line 163
+    .line 173
     :cond_1
     :goto_0
     return-void
@@ -1541,7 +1571,7 @@
 .method public toggleDrawer()V
     .locals 2
 
-    .line 218
+    .line 228
     iget-object v0, p0, Lcom/winlator/cmod/MainActivity;->drawerLayout:Landroidx/drawerlayout/widget/DrawerLayout;
 
     const v1, 0x800003
@@ -1552,20 +1582,20 @@
 
     if-eqz v0, :cond_0
 
-    .line 219
+    .line 229
     iget-object v0, p0, Lcom/winlator/cmod/MainActivity;->drawerLayout:Landroidx/drawerlayout/widget/DrawerLayout;
 
     invoke-virtual {v0, v1}, Landroidx/drawerlayout/widget/DrawerLayout;->closeDrawer(I)V
 
     goto :goto_0
 
-    .line 221
+    .line 231
     :cond_0
     iget-object v0, p0, Lcom/winlator/cmod/MainActivity;->drawerLayout:Landroidx/drawerlayout/widget/DrawerLayout;
 
     invoke-virtual {v0, v1}, Landroidx/drawerlayout/widget/DrawerLayout;->openDrawer(I)V
 
-    .line 223
+    .line 233
     :goto_0
     return-void
 .end method
