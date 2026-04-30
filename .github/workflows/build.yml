@@ -667,7 +667,7 @@ jobs:
             -f -v 4 rebuilt-unsigned.apk rebuilt-aligned.apk
 
       - name: Upload aligned APK for variant builds
-        if: "!contains(github.ref_name, '-pre') && !contains(github.ref_name, '-beta')"
+        if: github.ref_type == 'tag'
         uses: actions/upload-artifact@v4
         with:
           name: rebuilt-aligned
@@ -690,27 +690,28 @@ jobs:
           echo "Signed: $APK_NAME ($(du -sh "$APK_NAME" | cut -f1))"
           echo "apk_name=$APK_NAME" >> "$GITHUB_OUTPUT"
 
+      - name: Upload signed APK as artifact
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.sign.outputs.apk_name }}
+          path: ${{ steps.sign.outputs.apk_name }}
+          retention-days: 7
+
       - name: Create or update GitHub release
+        if: github.ref_type == 'tag'
         run: |
           APK_NAME="${{ steps.sign.outputs.apk_name }}"
           TAG="${GITHUB_REF_NAME}"
 
-          # Stable release for v* tags; prerelease for branch/dispatch builds
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            PRERELEASE_FLAG=""
-          else
-            PRERELEASE_FLAG="--prerelease"
-          fi
-
           if gh release view "$TAG" &>/dev/null; then
             gh release upload "$TAG" "$APK_NAME" --clobber
-            gh release edit "$TAG" --draft=false $PRERELEASE_FLAG
+            gh release edit "$TAG" --draft=false
             echo "Uploaded to existing release $TAG"
           else
             gh release create "$TAG" "$APK_NAME" \
               --title "Ludashi-plus $TAG" \
-              --notes "Automated build — see PROGRESS_LOG.md for details." \
-              $PRERELEASE_FLAG
+              --notes "Automated build — see PROGRESS_LOG.md for details."
             echo "Created new release $TAG with $APK_NAME"
           fi
         env:
@@ -718,7 +719,7 @@ jobs:
 
   build-variants:
     needs: build
-    if: "!contains(github.ref_name, '-pre') && !contains(github.ref_name, '-beta')"
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     strategy:
       matrix:
