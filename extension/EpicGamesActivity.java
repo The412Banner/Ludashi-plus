@@ -71,6 +71,8 @@ public class EpicGamesActivity extends Activity {
     private static final int COLOR_CARD_BG = 0xFF0F1117;  // dark card background
     private static final int COLOR_HDR_BG  = 0xFF0F1117;
     private static final int COLOR_ROOT_BG = 0xFF0D0D0D;
+    private static final int REQ_GAME_DETAIL  = 1001;
+    private static final int REQ_DOWNLOADS    = 1002;
 
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
 
@@ -1224,5 +1226,26 @@ public class EpicGamesActivity extends Activity {
     private int dp(int v) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v,
                 getResources().getDisplayMetrics());
+    }
+    // ── Full-screen detail ────────────────────────────────────────────────────
+
+    private void openDetailScreen(EpicGame game) {
+        Intent intent = new Intent(this, EpicGameDetailActivity.class);
+        intent.putExtra("app_name",        game.appName);
+        intent.putExtra("title",           game.title);
+        intent.putExtra("description",     game.description);
+        intent.putExtra("developer",       game.developer);
+        intent.putExtra("art_cover",       game.artCover);
+        intent.putExtra("namespace",       game.namespace);
+        intent.putExtra("catalog_item_id", game.catalogItemId);
+        startActivityForResult(intent, REQ_GAME_DETAIL);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_GAME_DETAIL && resultCode == EpicGameDetailActivity.RESULT_REFRESH) {
+            applyFilter(searchBar != null ? searchBar.getText().toString() : "");
+        }
     }
 }
