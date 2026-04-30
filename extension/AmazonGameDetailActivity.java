@@ -340,7 +340,6 @@ public class AmazonGameDetailActivity extends Activity {
         _dlGame.productSku    = productSku != null ? productSku : "";
         StoreDownloadQueue.startAmazon(this, _dlGame, dlKey);
         attachDownloadListener(dlKey);
-        startForegroundService(svc);
     }
 
     private void attachDownloadListener(String dlKey) {
@@ -526,7 +525,7 @@ public class AmazonGameDetailActivity extends Activity {
         new Thread(() -> {
             String token = AmazonCredentialStore.getValidAccessToken(this);
             long size = (token != null && entitlementId != null && !entitlementId.isEmpty())
-                    ? AmazonDownloadManager.fetchInstallSizeBytes(token, entitlementId)
+                    ? -1L // fetchInstallSizeBytes not available in Ludashi-plus
                     : -1;
             if (size > 0) prefs.edit().putLong("amazon_size_" + productId, size).apply();
             uiHandler.post(() -> {
