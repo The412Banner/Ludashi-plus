@@ -44,6 +44,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import android.content.Intent;
 
 /**
  * Displays the signed-in user's GOG library as scrollable game cards.
