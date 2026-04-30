@@ -1,7 +1,15 @@
 package com.winlator.cmod.store;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import java.io.File;
@@ -10,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class StoreDownloadQueue {
 
@@ -38,9 +47,20 @@ public class StoreDownloadQueue {
         }
     }
 
-    private static final ConcurrentHashMap<String, DownloadEntry>  entries     = new ConcurrentHashMap<>();
+    private static final String CHANNEL_ID     = "store_downloads";
+    private static final String ACTION_CANCEL  = "com.winlator.cmod.store.CANCEL_DOWNLOAD";
+    private static final String EXTRA_DL_KEY   = "dl_key";
+
+    private static final ConcurrentHashMap<String, DownloadEntry>   entries     = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, DownloadListener> listeners  = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, AtomicBoolean>  cancelFlags = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, AtomicBoolean>   cancelFlags = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Integer>         lastPct     = new ConcurrentHashMap<>();
+
+    private static volatile Context            appCtx         = null;
+    private static volatile BroadcastReceiver  cancelReceiver = null;
+    private static final AtomicInteger         activeCount    = new AtomicInteger(0);
+
+    // ── Public API ────────────────────────────────────────────────────────────
 
     public static boolean isActive(String dlKey) {
         DownloadEntry e = entries.get(dlKey);
@@ -71,11 +91,13 @@ public class StoreDownloadQueue {
         cancelFlags.put(dlKey, cancelled);
         DownloadEntry entry = new DownloadEntry(dlKey, "GOG", game.title);
         entries.put(dlKey, entry);
+        onDownloadStarted(ctx, dlKey);
 
         GogDownloadManager.startDownload(ctx, game, new GogDownloadManager.Callback() {
             @Override public void onProgress(String msg, int pct) {
                 entry.status = msg; entry.percent = pct;
                 notifyProgress(dlKey, msg, pct);
+                updateNotification(dlKey, entry);
             }
             @Override public void onComplete(String exePath) {
                 ctx.getSharedPreferences("bh_gog_prefs", 0).edit()
@@ -100,6 +122,7 @@ public class StoreDownloadQueue {
         cancelFlags.put(dlKey, cancelled);
         DownloadEntry entry = new DownloadEntry(dlKey, "EPIC", game.title);
         entries.put(dlKey, entry);
+        onDownloadStarted(ctx, dlKey);
 
         new Thread(() -> {
             try {
@@ -107,8 +130,9 @@ public class StoreDownloadQueue {
                 if (token == null) { finish(dlKey, entry, cancelled.get(), true, "Login required", null); return; }
                 if (cancelled.get()) { finish(dlKey, entry, true, false, null, null); return; }
 
-                notifyProgress(dlKey, "Fetching manifest…", 0);
                 entry.status = "Fetching manifest…";
+                notifyProgress(dlKey, "Fetching manifest…", 0);
+                updateNotification(dlKey, entry);
 
                 String manifestJson = EpicApiClient.getManifestApiJson(
                         token, game.namespace, game.catalogItemId, game.appName);
@@ -128,6 +152,7 @@ public class StoreDownloadQueue {
                             if (cancelled.get()) return;
                             entry.status = msg; entry.percent = pct;
                             notifyProgress(dlKey, msg, pct);
+                            updateNotification(dlKey, entry);
                         });
 
                 if (cancelled.get()) { finish(dlKey, entry, true, false, null, null); return; }
@@ -159,6 +184,7 @@ public class StoreDownloadQueue {
         cancelFlags.put(dlKey, cancelled);
         DownloadEntry entry = new DownloadEntry(dlKey, "AMAZON", game.title);
         entries.put(dlKey, entry);
+        onDownloadStarted(ctx, dlKey);
 
         new Thread(() -> {
             try {
@@ -180,6 +206,7 @@ public class StoreDownloadQueue {
                             String name = (file != null && !file.isEmpty()) ? file : "Downloading…";
                             entry.status = name; entry.percent = pct;
                             notifyProgress(dlKey, name, pct);
+                            updateNotification(dlKey, entry);
                         },
                         cancelled::get);
 
@@ -205,6 +232,120 @@ public class StoreDownloadQueue {
         }, "amazon-dl-" + game.productId).start();
     }
 
+    // ── Notification helpers ──────────────────────────────────────────────────
+
+    private static void ensureChannel(Context ctx) {
+        NotificationManager nm = (NotificationManager)
+                ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm.getNotificationChannel(CHANNEL_ID) != null) return;
+        NotificationChannel ch = new NotificationChannel(
+                CHANNEL_ID, "Game Downloads", NotificationManager.IMPORTANCE_LOW);
+        ch.setDescription("Progress for GOG, Epic, and Amazon game downloads");
+        ch.setShowBadge(false);
+        nm.createNotificationChannel(ch);
+    }
+
+    private static int notifId(String dlKey) {
+        return ("dl:" + dlKey).hashCode();
+    }
+
+    private static void updateNotification(String dlKey, DownloadEntry e) {
+        Context ctx = appCtx;
+        if (ctx == null) return;
+        // Throttle: skip update if percent unchanged
+        Integer prev = lastPct.get(dlKey);
+        if (prev != null && prev == e.percent) return;
+        lastPct.put(dlKey, e.percent);
+
+        Intent cancelIntent = new Intent(ACTION_CANCEL).putExtra(EXTRA_DL_KEY, dlKey);
+        PendingIntent cancelPi = PendingIntent.getBroadcast(ctx, notifId(dlKey),
+                cancelIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Intent tapIntent = new Intent(ctx, DownloadsActivity.class);
+        PendingIntent tapPi = PendingIntent.getActivity(ctx, 0, tapIntent,
+                PendingIntent.FLAG_IMMUTABLE);
+
+        Notification notif = new Notification.Builder(ctx, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_sys_download)
+                .setContentTitle(e.store + ": " + e.title)
+                .setContentText(e.status)
+                .setProgress(100, e.percent, e.percent == 0)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setContentIntent(tapPi)
+                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel", cancelPi)
+                .build();
+
+        ((NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE))
+                .notify(notifId(dlKey), notif);
+    }
+
+    private static void postFinalNotification(String dlKey, DownloadEntry e,
+                                              boolean cancelled, boolean error) {
+        Context ctx = appCtx;
+        if (ctx == null) return;
+
+        String title, text;
+        int icon;
+        if (cancelled) {
+            ((NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE))
+                    .cancel(notifId(dlKey));
+            return;
+        } else if (error) {
+            title = e.store + ": Download failed";
+            text  = e.title + " — " + e.status;
+            icon  = android.R.drawable.stat_notify_error;
+        } else {
+            title = e.store + ": Download complete";
+            text  = e.title;
+            icon  = android.R.drawable.stat_sys_download_done;
+        }
+
+        Intent tapIntent = new Intent(ctx, DownloadsActivity.class);
+        PendingIntent tapPi = PendingIntent.getActivity(ctx, 0, tapIntent,
+                PendingIntent.FLAG_IMMUTABLE);
+
+        Notification notif = new Notification.Builder(ctx, CHANNEL_ID)
+                .setSmallIcon(icon)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setAutoCancel(true)
+                .setContentIntent(tapPi)
+                .build();
+
+        ((NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE))
+                .notify(notifId(dlKey), notif);
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    private static synchronized void onDownloadStarted(Context ctx, String dlKey) {
+        if (appCtx == null) appCtx = ctx.getApplicationContext();
+        ensureChannel(appCtx);
+        lastPct.put(dlKey, -1);
+        if (activeCount.getAndIncrement() == 0) {
+            cancelReceiver = new BroadcastReceiver() {
+                @Override public void onReceive(Context c, Intent i) {
+                    String key = i.getStringExtra(EXTRA_DL_KEY);
+                    if (key != null) cancel(c, key);
+                }
+            };
+            IntentFilter filter = new IntentFilter(ACTION_CANCEL);
+            if (Build.VERSION.SDK_INT >= 33) {
+                appCtx.registerReceiver(cancelReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                appCtx.registerReceiver(cancelReceiver, filter);
+            }
+        }
+    }
+
+    private static synchronized void onDownloadFinished() {
+        if (activeCount.decrementAndGet() == 0 && cancelReceiver != null) {
+            try { appCtx.unregisterReceiver(cancelReceiver); } catch (Exception ignored) {}
+            cancelReceiver = null;
+        }
+    }
+
     // ── Internals ─────────────────────────────────────────────────────────────
 
     private static void notifyProgress(String dlKey, String msg, int pct) {
@@ -217,6 +358,9 @@ public class StoreDownloadQueue {
                                 String errorMsg, String completePath) {
         entry.active = false;
         cancelFlags.remove(dlKey);
+        lastPct.remove(dlKey);
+        postFinalNotification(dlKey, entry, wasCancelled, wasError);
+        onDownloadFinished();
         DownloadListener l = listeners.get(dlKey);
         if (wasCancelled) {
             entry.status = "Cancelled";

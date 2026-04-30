@@ -596,12 +596,7 @@ public class EpicGamesActivity extends Activity {
 
         card.setOnClickListener(v -> {
             if (expandSection.getVisibility() == View.VISIBLE) {
-                showDetailDialog(game, checkmark, actionBtn, () -> {
-                    checkmark.setVisibility(View.GONE);
-                    collapsedCheckTV.setVisibility(View.GONE);
-                    actionBtn.setText("Install");
-                    actionBtn.setBackgroundColor(COLOR_ACCENT);
-                });
+                openDetailScreen(game);
             } else {
                 if (expandedSection != null) {
                     expandedSection.setVisibility(View.GONE);
@@ -809,11 +804,7 @@ public class EpicGamesActivity extends Activity {
         });
 
         tile.setOnLongClickListener(v -> {
-            showDetailDialog(game, checkTV, actionBtn, () -> {
-                checkTV.setVisibility(View.GONE);
-                actionBtn.setText("Install");
-                actionBtn.setBackgroundColor(COLOR_ACCENT);
-            });
+            openDetailScreen(game);
             return true;
         });
 

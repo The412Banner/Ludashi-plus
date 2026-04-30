@@ -703,12 +703,7 @@ public class GogGamesActivity extends Activity {
 
         card.setOnClickListener(v -> {
             if (expandSection.getVisibility() == View.VISIBLE) {
-                showDetailDialog(game, checkmark, actionBtn, () -> {
-                    checkmark.setVisibility(View.GONE);
-                    collapsedCheckTV.setVisibility(View.GONE);
-                    actionBtn.setText("Install");
-                    actionBtn.setBackgroundColor(0xFF7033FF);
-                });
+                openDetailScreen(game);
             } else {
                 if (expandedSection != null) {
                     expandedSection.setVisibility(View.GONE);
@@ -965,11 +960,7 @@ public class GogGamesActivity extends Activity {
         });
 
         tile.setOnLongClickListener(v -> {
-            showDetailDialog(game, checkTV, actionBtn, () -> {
-                checkTV.setVisibility(View.GONE);
-                actionBtn.setText("Install");
-                actionBtn.setBackgroundColor(0xFF5533CC);
-            });
+            openDetailScreen(game);
             return true;
         });
 
