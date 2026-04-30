@@ -699,7 +699,7 @@ jobs:
           retention-days: 7
 
       - name: Create or update GitHub release
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' && !contains(github.ref_name, '-pre')
         run: |
           APK_NAME="${{ steps.sign.outputs.apk_name }}"
           TAG="${GITHUB_REF_NAME}"
@@ -719,7 +719,7 @@ jobs:
 
   build-variants:
     needs: build
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' && !contains(github.ref_name, '-pre')
     runs-on: ubuntu-latest
     strategy:
       matrix:
