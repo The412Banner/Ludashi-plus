@@ -16,6 +16,16 @@ It is signed with the same key as StevenMXZ's original release, meaning it can u
 
 ---
 
+## What's new in v3.1
+
+- **Unified download manager** — all GOG / Epic / Amazon downloads now flow through a single queue with Android progress notifications and a cancel action button
+- **Downloads screen** — a new entry in the side menu (also reachable from a ⬇ button in each store header) shows every active and finished download in one place
+- **Per-game detail screens** for GOG, Epic, and Amazon — tap a card to open the full game page; in-progress downloads now restore correctly across list, grid, and detail views
+- **Reliable cancel** across all four stores — fixes cases where cancel left buttons stuck or kept downloading in the background
+- **Refreshed base APK** — built on a slightly newer Ludashi 3.0 bionic with rebased resource IDs
+
+---
+
 ## What Ludashi+ adds
 
 ### Game Stores

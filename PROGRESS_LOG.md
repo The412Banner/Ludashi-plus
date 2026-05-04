@@ -1207,3 +1207,18 @@ as "Cancel".
   silent return (no `cb.onError()` call), preventing double-callback with the cancel Runnable
 - `GogGamesActivity`, `EpicGamesActivity`, `AmazonGamesActivity`: removed `removeListener()` from
   all cancel Runnables — `onCancelled()` listener handles UI reset and self-removal
+
+---
+
+### v3.1 — stable release (2026-05-04)
+**Branch:** `3.0` | **Tag:** `v3.1` | **Base APK:** `ludashi-3.0-lsfg-vk-base/ludashi-bionic.apk` (530.3 MB)
+
+#### Highlights
+- All store-update work from PR #4 promoted to stable: StoreDownloadQueue, GOG/Epic/Amazon GameDetailActivity ports, DownloadsActivity, main_menu_downloads, ⬇ Downloads button in each store header, list ↔ detail ↔ notification sync, cancel correctness fixes
+- Base APK switched from `base-apk-3.0` (528.5 MB) to `ludashi-3.0-lsfg-vk-base` (530.3 MB) via PR #7
+- Rebased `patches/res/values/public.xml` (rebuilt from new base, dropped 118 `ab_*`/`animated_background` drawables, renumbered the 6 store IDs to `0x7f090392`–`0x7f090397`) and remapped 24 literal-ID references in `MainActivity.smali` (13 shifted `R.id` values + 6 store renumberings) — fixes `AppCompatDelegateImpl.createSubDecor` NPE that surfaced under the new base
+
+#### Path to stable
+- **Pre-release** [`test-lsfg-vk-base-build`](https://github.com/The412Banner/Ludashi-plus/releases/tag/test-lsfg-vk-base-build) at commit `b09d8f7` — built via run [25295858420](https://github.com/The412Banner/Ludashi-plus/actions/runs/25295858420), device-tested by user (launch + store flows green)
+- PR #7 merged into `3.0` as merge commit `2631792` (2026-05-04 01:15 UTC)
+- `v3.1` tag pushed from `3.0` tip to fire workflow's stable + variants matrix (Vanilla / PuBG / Genshin / AnTuTu)
