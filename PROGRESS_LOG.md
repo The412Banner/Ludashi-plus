@@ -1222,3 +1222,12 @@ as "Cancel".
 - **Pre-release** [`test-lsfg-vk-base-build`](https://github.com/The412Banner/Ludashi-plus/releases/tag/test-lsfg-vk-base-build) at commit `b09d8f7` — built via run [25295858420](https://github.com/The412Banner/Ludashi-plus/actions/runs/25295858420), device-tested by user (launch + store flows green)
 - PR #7 merged into `3.0` as merge commit `2631792` (2026-05-04 01:15 UTC)
 - `v3.1` tag pushed from `3.0` tip to fire workflow's stable + variants matrix (Vanilla / PuBG / Genshin / AnTuTu)
+
+#### LSFG-VK in v3.1
+The new base APK is built from [`The412Banner/Winlator-Ludashi/lsfg-vk`](https://github.com/The412Banner/Winlator-Ludashi/tree/lsfg-vk) (originally ported from ref4ik bionic). v3.1 ships the full LSFG-VK runtime:
+
+- `assets/lsfg_vk/{Lossless.dll, android_arm64_v8a/liblsfg-vk-layer.so, android_arm64_v8a/VkLayer_LS_frame_generation.json}` — preserved through apktool decode/rebuild
+- `Lcom/winlator/cmod/core/LsfgVkManager;` and `Lcom/winlator/cmod/core/LsfgQuickMenuHelper;` in classes9.dex — Ludashi-plus does not patch `smali_classes9`
+- Call sites in `SettingsFragment` (settings UI), `XServerDisplayActivity` (in-game quick menu), `GuestProgramLauncherComponent` (env injection at launch) — Ludashi-plus only overrides `MainActivity.smali` in `smali_classes8`, so these survive
+- Per-container keys: `lsfgEnabled`, `lsfgMultiplier`, `lsfgFlowScale`, `lsfgPerformanceMode`
+- Runtime layout: `.config/lsfg-vk/conf.toml`, `.local/share/vulkan/implicit_layer.d/VkLayer_LS_frame_generation.json`, `.local/share/lsfg-vk/Lossless.dll`

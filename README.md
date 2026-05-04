@@ -18,6 +18,7 @@ It is signed with the same key as StevenMXZ's original release, meaning it can u
 
 ## What's new in v3.1
 
+- **LSFG-VK frame generation** — the base APK now bundles the Lossless Scaling Vulkan implicit layer (from [`The412Banner/Winlator-Ludashi/lsfg-vk`](https://github.com/The412Banner/Winlator-Ludashi/tree/lsfg-vk), originally ported from ref4ik bionic). Toggle per-container in container settings (multiplier / flow scale / performance mode) or via the in-game quick menu — runtime, settings, launcher hook, and UI all ride along from the base
 - **Unified download manager** — all GOG / Epic / Amazon downloads now flow through a single queue with Android progress notifications and a cancel action button
 - **Downloads screen** — a new entry in the side menu (also reachable from a ⬇ button in each store header) shows every active and finished download in one place
 - **Per-game detail screens** for GOG, Epic, and Amazon — tap a card to open the full game page; in-progress downloads now restore correctly across list, grid, and detail views
