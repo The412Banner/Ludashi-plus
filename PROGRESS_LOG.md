@@ -4,6 +4,36 @@ Build and modification history for Ludashi-plus — Winlator Ludashi v2.9 bionic
 
 ---
 
+### [stable] — v3.1.1 hotfix — LSFG-VK color bug fix (2026-05-04)
+**Branch:** `3.0-revert-test` | **Tag:** `v3.1.1` | **Base APK:** `ludashi-3.0-lsfg-vk-base-revert-test`
+
+#### Problem
+v3.1 stable shipped with an R↔B channel swap visible only when LSFG-VK was enabled — cyan skin tones in GTA V, orange wallpaper, green tints throughout the Wine desktop. Same APK with LSFG-VK off rendered correctly.
+
+#### Round 1 — layer-side format threading (FAILED)
+Hypothesis: `lsfg-vk-android/src/context.cpp:67-69` hardcoded RGBA for the layer's `frame_0`/`frame_1`/`out_n` intermediates and used `vkCmdBlitImage` (no swizzle) into a BGRA8 swapchain. Patched the layer to thread `pCreateInfo->imageFormat` from hooks.cpp into `LsContext::createContext`. Verified via `nm -D` that the format param reached the proprietary blob.
+
+Test APK installed on device → **same colors**. Conclusion: proprietary Lossless framegen blob ignores the format param.
+
+#### Round 2 — upstream channel-rework revert (WORKS)
+Real root cause was two Pipetto-crypto commits merged into our Winlator-Ludashi base on 2026-05-03:
+
+1. `89f805e` "VulkanRenderer: improve handling of swapped channels" — hardcoded swapchain to BGRA8, moved R↔B swap from fragment shader into image-view component mapping, removed `swapRB` from push constants.
+2. `8d4cb01` "VulkanRenderer: only swap channels of window resources textures" — reverted the swapchain swizzle, instead allocates per-window WinTex images as `R8G8B8A8_UNORM` when swapRB=true; fully removed `swapRB` from `WindowPushConstants`.
+
+After 8d4cb01: swapchain is BGRA8, per-window textures RGBA8, shader writes `outColor = c` (no swap). Display path works because the GPU/driver handles the format mismatch on present — but LSFG reads swapchain bytes raw and sees R-G-B-A semantically labeled BGRA → mismatched.
+
+Reverted both commits on `The412Banner/Winlator-Ludashi@revert-channel-rework` (CI run **25300464326** ✅, 3m12s, 2026-05-04). Published the new base as release tag `ludashi-3.0-lsfg-vk-base-revert-test` on Ludashi-plus. Confirmed working on-device — colors correct in games and Wine desktop.
+
+#### Source promotion
+- Winlator-Ludashi: fast-forwarded `lsfg-vk-color-fix` to include the two reverts (commits `e6351bd` + `a6b10ce`).
+- Ludashi-plus: `3.0-revert-test` branch + `build.yml` line 39 already points at `ludashi-3.0-lsfg-vk-base-revert-test` — no Ludashi-plus source changes needed beyond the base-APK tag swap.
+
+#### What's unchanged from v3.1
+Everything except the base APK: LSFG-VK feature flow, store integrations, downloads screen, splash screen, etc.
+
+---
+
 ### [branch] — 3.0 — v3.0 base APK porting session (2026-04-30)
 **Branch:** `3.0` | **Tag:** `3.0` (pre-release) | CI ✅ run 25171129287
 

@@ -16,6 +16,10 @@ It is signed with the same key as StevenMXZ's original release, meaning it can u
 
 ---
 
+## What's new in v3.1.1 (hotfix)
+
+- **Fixes the cyan/orange color bug when LSFG-VK is enabled** — in v3.1, enabling LSFG-VK caused a clean R↔B channel swap in games (cyan skin, orange wallpaper) and on the Wine desktop. Root cause was two upstream Pipetto Winlator commits that reworked the swapchain channel handling (BGRA8 swapchain + per-window RGBA8 texture allocation); the LSFG framegen layer reads swapchain bytes raw, so it saw mismatched semantics. Both commits have been reverted on the base APK; everything else from v3.1 is unchanged.
+
 ## What's new in v3.1
 
 - **LSFG-VK frame generation** — the base APK now bundles the Lossless Scaling Vulkan implicit layer (from [`The412Banner/Winlator-Ludashi/lsfg-vk`](https://github.com/The412Banner/Winlator-Ludashi/tree/lsfg-vk), originally ported from ref4ik bionic). Toggle per-container in container settings (multiplier / flow scale / performance mode) or via the in-game quick menu — runtime, settings, launcher hook, and UI all ride along from the base
